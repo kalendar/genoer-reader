@@ -64,8 +64,15 @@ async function resolveLocal(localId: string): Promise<ResolvedBook> {
 		? crossCheckGraphAgainstBook(graph, new Set(book.sections.map((s) => s.id)))
 		: [];
 
+	// The app-wide slug for a local load is the id the user chose in the loader form (`localId` —
+	// also the IndexedDB/registry key), NOT `book.slug` from the file's own content. Unlike a URL
+	// source (where the declared slug *is* the identity, so re-loading the same URL reuses the same
+	// annotations), a local load's whole point is letting the same book.json be loaded under a
+	// different slug to keep it isolated from another copy — e.g. loading the bundled book's own
+	// book.json as a local file under "entrepreneurship-copy" must not collide with the bundled
+	// book's "entrepreneurship" highlights/notes/chat/practice history.
 	return {
-		slug: book.slug,
+		slug: localId,
 		book,
 		graph,
 		source: { kind: 'local', slug: localId },
