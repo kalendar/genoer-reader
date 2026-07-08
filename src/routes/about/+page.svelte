@@ -84,7 +84,7 @@
 	<title>About &amp; the 5Rs — GenOER Reader</title>
 </svelte:head>
 
-<div class="about-page">
+<main class="about-page">
 	<header class="about-hero">
 		<h1>About GenOER Reader</h1>
 		<p class="about-tagline">
@@ -306,7 +306,7 @@
 			Face's public CDN — both cached for offline use afterward.
 		</p>
 	</section>
-</div>
+</main>
 
 <style>
 	.about-page {

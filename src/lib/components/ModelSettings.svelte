@@ -273,7 +273,7 @@
 	}
 	.warn-line {
 		margin: 0.4rem 0 0;
-		color: #b8860b;
+		color: var(--color-warn-text);
 		font-size: 0.82rem;
 	}
 
@@ -291,7 +291,7 @@
 		color: #fff;
 	}
 	.badge.warn {
-		background: #b8860b;
+		background: var(--color-warn-badge-bg);
 		color: #fff;
 	}
 

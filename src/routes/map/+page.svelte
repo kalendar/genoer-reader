@@ -183,7 +183,7 @@
 	<title>Concept Map — GenOER Reader</title>
 </svelte:head>
 
-<div class="map-page">
+<main class="map-page">
 	<header class="map-page-header">
 		<h1>Concept Map</h1>
 		<div class="map-page-search">
@@ -279,7 +279,7 @@
 			</div>
 		</div>
 	{/if}
-</div>
+</main>
 
 <style>
 	.map-page {

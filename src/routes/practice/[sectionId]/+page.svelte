@@ -13,17 +13,19 @@
 	<title>Practice — {data.section.title} — GenOER Reader</title>
 </svelte:head>
 
-<PracticePanel
-	slug={data.slug}
-	sectionId={data.section.id}
-	sectionTitle={data.section.title}
-	sectionNumber={data.section.number}
-	blocks={practiceBlocks}
-/>
+<main>
+	<PracticePanel
+		slug={data.slug}
+		sectionId={data.section.id}
+		sectionTitle={data.section.title}
+		sectionNumber={data.section.number}
+		blocks={practiceBlocks}
+	/>
 
-<p class="practice-back">
-	<a href="/read/{data.section.id}">&larr; Back to {data.section.title}</a>
-</p>
+	<p class="practice-back">
+		<a href="/read/{data.section.id}">&larr; Back to {data.section.title}</a>
+	</p>
+</main>
 
 <style>
 	.practice-back {

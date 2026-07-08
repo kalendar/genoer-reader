@@ -13,6 +13,7 @@
 	import HighlightCard from '$lib/components/HighlightCard.svelte';
 	import BlockNoteCard from '$lib/components/BlockNoteCard.svelte';
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
+	import { prefersReducedMotion } from '$lib/utils/motion';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -29,8 +30,14 @@
 	let activeConceptId: string | null = $state(null);
 	let activeAnchorRect: DOMRect | null = $state(null);
 
+	// The element that opened whichever popover is currently active (SPEC.md §10 "focus management
+	// in popovers ... focus returns") — restored on close so keyboard/screen-reader users land back
+	// where they were, not at the top of the document.
+	let popoverTrigger: HTMLElement | null = null;
+
 	function openConceptCard(conceptId: string, target: HTMLElement) {
 		closeAllPopovers();
+		popoverTrigger = target;
 		activeConceptId = conceptId;
 		activeAnchorRect = target.getBoundingClientRect();
 	}
@@ -62,12 +69,16 @@
 
 	function openHighlightCard(highlightId: string, target: HTMLElement) {
 		closeAllPopovers();
+		popoverTrigger = target;
 		activeHighlightId = highlightId;
 		activeHighlightRect = target.getBoundingClientRect();
 	}
 
 	function openNoteForHighlight(highlightId: string, rect: DOMRect) {
 		closeAllPopovers();
+		// Opened from the selection toolbar (which vanishes once the selection clears), not a
+		// persistent element — nothing meaningful to return focus to, so `popoverTrigger` stays null
+		// and focus simply lands in the note editor that opens (still keyboard-reachable from there).
 		activeHighlightId = highlightId;
 		activeHighlightRect = rect;
 		highlightAutoEdit = true;
@@ -79,8 +90,14 @@
 
 	function openBlockNote(anchor: string, target: HTMLElement) {
 		closeAllPopovers();
+		popoverTrigger = target;
 		activeNoteBlockAnchor = anchor;
 		activeNoteRect = target.getBoundingClientRect();
+	}
+
+	function restoreFocus() {
+		if (popoverTrigger && document.contains(popoverTrigger)) popoverTrigger.focus();
+		popoverTrigger = null;
 	}
 
 	function closeAllPopovers() {
@@ -93,9 +110,18 @@
 		activeNoteRect = null;
 	}
 
+	/** Same as `closeAllPopovers`, but also restores focus — used by the popovers' own `onClose`
+	 * (an explicit user dismissal), not by the "close whichever else is open" call inside `open*`
+	 * above (which is about to focus something else anyway). */
+	function closeAllPopoversAndRestoreFocus() {
+		closeAllPopovers();
+		restoreFocus();
+	}
+
 	function closeConceptCard() {
 		activeConceptId = null;
 		activeAnchorRect = null;
+		restoreFocus();
 	}
 
 	// A section's blocks sometimes lead with a "Learning Objectives" block that just restates
@@ -142,7 +168,7 @@
 		if (!hash) return;
 		const target = document.getElementById(hash);
 		if (!target) return;
-		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
 		target.classList.add('flash-highlight');
 		setTimeout(() => target.classList.remove('flash-highlight'), 2000);
 	});
@@ -233,7 +259,7 @@
 				note={sectionNotes.find((n) => n.highlightId === h.id) ?? null}
 				anchorRect={activeHighlightRect}
 				autoEdit={highlightAutoEdit}
-				onClose={closeAllPopovers}
+				onClose={closeAllPopoversAndRestoreFocus}
 			/>
 		{/key}
 	{/if}

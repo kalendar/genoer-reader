@@ -80,7 +80,7 @@
 	<title>Notebook — GenOER Reader</title>
 </svelte:head>
 
-<div class="notebook-page">
+<main class="notebook-page">
 	<header class="notebook-header">
 		<div>
 			<h1>Notebook</h1>
@@ -191,7 +191,7 @@
 			</ul>
 		{/if}
 	</section>
-</div>
+</main>
 
 <style>
 	.notebook-page {

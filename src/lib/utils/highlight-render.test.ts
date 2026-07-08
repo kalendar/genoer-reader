@@ -13,7 +13,7 @@ test('wraps a plain-text range in a single block of text', () => {
 	const out = applyHighlights(html, [{ id: 'h1', start: 4, end: 15 }]);
 	assert.equal(
 		out,
-		'<p>The <mark class="user-highlight" data-highlight-id="h1">quick brown</mark> fox jumps.</p>'
+		'<p>The <mark class="user-highlight" data-highlight-id="h1" tabindex="0" role="button" aria-haspopup="dialog">quick brown</mark> fox jumps.</p>'
 	);
 });
 
@@ -34,7 +34,7 @@ test('splits the mark across an inline tag boundary rather than corrupting marku
 	const out = applyHighlights(html, [{ id: 'h1', start: 2, end: 7 }]);
 	assert.equal(
 		out,
-		'<p>ab<mark class="user-highlight" data-highlight-id="h1">c</mark><em><mark class="user-highlight" data-highlight-id="h1">def</mark></em><mark class="user-highlight" data-highlight-id="h1">g</mark>hi</p>'
+		'<p>ab<mark class="user-highlight" data-highlight-id="h1" tabindex="0" role="button" aria-haspopup="dialog">c</mark><em><mark class="user-highlight" data-highlight-id="h1" tabindex="-1" role="button" aria-haspopup="dialog">def</mark></em><mark class="user-highlight" data-highlight-id="h1" tabindex="-1" role="button" aria-haspopup="dialog">g</mark>hi</p>'
 	);
 	// Every opened mark is closed and nothing outside <em> leaks inside it.
 	assert.equal((out.match(/<mark /g) ?? []).length, (out.match(/<\/mark>/g) ?? []).length);
@@ -58,7 +58,7 @@ test('treats an HTML entity as a single visible character, and merges adjacent r
 	const out = applyHighlights(html, [{ id: 'h1', start: 4, end: 11 }]);
 	assert.equal(
 		out,
-		'<p>Tom <mark class="user-highlight" data-highlight-id="h1">&amp; Jerry</mark></p>'
+		'<p>Tom <mark class="user-highlight" data-highlight-id="h1" tabindex="0" role="button" aria-haspopup="dialog">&amp; Jerry</mark></p>'
 	);
 });
 
@@ -67,5 +67,5 @@ test('never inserts a mark inside a tag\'s own attributes', () => {
 	// textContent is "See this link please."; highlight the word "link" (offsets 9..13).
 	const out = applyHighlights(html, [{ id: 'h1', start: 9, end: 13 }]);
 	assert.doesNotMatch(out, /href="https:\/\/example\.com\/<mark/);
-	assert.match(out, /<mark class="user-highlight" data-highlight-id="h1">link<\/mark>/);
+	assert.match(out, /<mark class="user-highlight" data-highlight-id="h1" tabindex="0" role="button" aria-haspopup="dialog">link<\/mark>/);
 });

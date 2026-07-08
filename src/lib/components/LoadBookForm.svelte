@@ -370,7 +370,7 @@
 		font-size: 0.85rem;
 	}
 	.load-book-warn {
-		color: #b8860b;
+		color: var(--color-warn-text);
 		font-size: 0.82rem;
 	}
 

@@ -54,7 +54,7 @@
 	<title>Learning pathways — GenOER Reader</title>
 </svelte:head>
 
-<div class="pathways-page">
+<main class="pathways-page">
 	<header class="pathways-header">
 		<h1>Learning pathways</h1>
 		<p class="pathways-intro">
@@ -128,7 +128,7 @@
 			</ol>
 		</div>
 	{/if}
-</div>
+</main>
 
 <style>
 	.pathways-page {

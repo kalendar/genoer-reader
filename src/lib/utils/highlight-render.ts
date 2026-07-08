@@ -73,6 +73,14 @@ export function applyHighlights(html: string, ranges: MarkRange[]): string {
 	const active: string[] = [];
 	const out: string[] = [];
 
+	// A single highlight can render as several `<mark>` fragments — split across an inline tag
+	// boundary, or nested inside another overlapping highlight (see the module doc comment). Only
+	// the first fragment of each highlight id is a Tab stop (SPEC.md §10 keyboard access); later
+	// fragments of the *same* id get `tabindex="-1"` so one highlight is one stop, not several —
+	// Block.svelte's click/keydown handler resolves `data-highlight-id` from whichever fragment was
+	// activated, so it works the same regardless of which one has focus.
+	const tabbableAssigned = new Set<string>();
+
 	// Buffer consecutive raw text so a run of characters that never crosses a highlight boundary
 	// (or a tag) becomes exactly one `<mark>`, not one per internal piece/entity split.
 	let buffer = '';
@@ -81,7 +89,11 @@ export function applyHighlights(html: string, ranges: MarkRange[]): string {
 		if (buffer === '') return;
 		let wrapped = buffer;
 		for (let i = active.length - 1; i >= 0; i--) {
-			wrapped = `<mark class="user-highlight" data-highlight-id="${active[i]}">${wrapped}</mark>`;
+			const id = active[i];
+			const isFirst = !tabbableAssigned.has(id);
+			tabbableAssigned.add(id);
+			const tabindex = isFirst ? '0' : '-1';
+			wrapped = `<mark class="user-highlight" data-highlight-id="${id}" tabindex="${tabindex}" role="button" aria-haspopup="dialog">${wrapped}</mark>`;
 		}
 		out.push(wrapped);
 		buffer = '';

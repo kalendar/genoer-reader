@@ -19,6 +19,11 @@
 	--color-accent-contrast: #ffffff;
 	--color-link: #7a3b1e;
 	--color-highlight: #fff1b8;
+	/* Warning text color — deliberately darker than the `#b8860b` used for warning borders/badges:
+	 * #b8860b on white is only 3.25:1, below WCAG AA's 4.5:1 for normal text (verified 2026-07-08).
+	 * Borders/badge backgrounds stay #b8860b (non-text UI components need only 3:1). */
+	--color-warn-text: #8a6408;
+	--color-warn-badge-bg: #8a6408;
 
 	--measure: 42rem;
 	--space-1: 0.5rem;
@@ -54,6 +59,8 @@
 		--color-accent-contrast: #17161a;
 		--color-link: #e0a479;
 		--color-highlight: #4a3f1f;
+		/* #b8860b on the dark raised background is 5.03:1 — passes AA here, unlike on white. */
+		--color-warn-text: #b8860b;
 
 		--map-node-entity: #d95926;
 
@@ -871,4 +878,92 @@ main#main-content {
 	margin: var(--space-4) auto;
 	padding: 0 var(--space-2);
 	font-family: var(--font-ui);
+}
+
+/* A book loaded via ?book= that isn't the bundled default (SPEC.md §8) */
+.custom-source-banner {
+	font-family: var(--font-ui);
+	font-size: 0.85rem;
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-left: 3px solid var(--color-accent);
+	border-radius: 0 0.3rem 0.3rem 0;
+	padding: 0.5rem 0.8rem;
+	margin: 0 0 var(--space-2);
+}
+
+.custom-source-warnings {
+	font-family: var(--font-ui);
+	font-size: 0.82rem;
+	color: var(--color-warn-text);
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-radius: 0.3rem;
+	padding: 0.5rem 0.8rem;
+	margin: 0 0 var(--space-2);
+}
+.custom-source-warnings summary {
+	cursor: pointer;
+}
+.custom-source-warnings ul {
+	margin: 0.4rem 0 0;
+	padding-left: 1.2rem;
+}
+
+/* Landing page's "load your own" section + About link */
+.landing-about-link {
+	color: var(--color-text-muted);
+	font-size: 0.92rem;
+}
+.landing-loader {
+	margin-top: var(--space-4);
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--color-border);
+}
+.landing-loader h2 {
+	font-size: 1.3rem;
+	margin: 0 0 0.4rem;
+}
+.landing-loader-intro {
+	color: var(--color-text-muted);
+	font-size: 0.92rem;
+	max-width: 34rem;
+}
+
+/* App-wide footer (distinct from the reader's book-attribution footer — SPEC.md §9 "Fork on
+ * GitHub" link) */
+.global-footer {
+	font-family: var(--font-ui);
+	font-size: 0.82rem;
+	color: var(--color-text-muted);
+	text-align: center;
+	padding: var(--space-2);
+	border-top: 1px solid var(--color-border);
+}
+
+/* Accessibility (SPEC.md §10, WCAG 2.1 AA) ---------------------------------- */
+
+/* Visible focus indicator everywhere — several components already set their own focus-visible
+ * treatment; this is the fallback for everything else (plain links, buttons, form controls). */
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* The root layout's skip-link target (a plain wrapper div, not a landmark, so its own focus ring
+ * shows even though it received focus programmatically rather than via keyboard). */
+#app-main:focus {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
 }

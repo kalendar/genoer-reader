@@ -9,4 +9,6 @@
 	<title>Chat — {data.book.title} — GenOER Reader</title>
 </svelte:head>
 
-<ChatPanel book={data.book} graph={data.graph} slug={data.slug} />
+<main class="chat-page-main">
+	<ChatPanel book={data.book} graph={data.graph} slug={data.slug} />
+</main>
