@@ -17,6 +17,7 @@
 	<nav aria-label="Main">
 		<a href="/read" aria-current={pathname.startsWith('/read') ? 'page' : undefined}>Read</a>
 		<a href="/map" aria-current={pathname.startsWith('/map') ? 'page' : undefined}>Concept map</a>
+		<a href="/chat" aria-current={pathname.startsWith('/chat') ? 'page' : undefined}>Chat</a>
 	</nav>
 </header>
 
