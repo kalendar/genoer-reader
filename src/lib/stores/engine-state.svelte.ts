@@ -26,6 +26,7 @@
 import type { Engine, Backend } from '$lib/engine';
 import { recommendForDevice, type DeviceSignals, type Recommendation } from '$lib/models/probe';
 import { loadSettings, saveSettings, resolveModel, type ModelSettings } from '$lib/models/settings';
+import { requestPersistentStorage } from '$lib/utils/storage';
 
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -123,6 +124,10 @@ class EngineState {
 			this.loadedModelId = this.settings.modelId;
 			this.status = 'ready';
 			saveSettings(this.settings);
+			// SPEC.md §10: ask the browser not to evict this (now multi-GB) origin under storage
+			// pressure. Best-effort, fire-and-forget — see $lib/utils/storage for why this lives
+			// outside the engine.
+			void requestPersistentStorage();
 		} catch (e) {
 			this.status = 'error';
 			this.engineError = engineErrorMessage(e);

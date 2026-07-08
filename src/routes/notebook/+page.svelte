@@ -87,6 +87,8 @@
 			<p class="notebook-intro">
 				Every highlight and note you've made, stored only in this browser. Export them as a
 				single JSON file any time — your annotations are yours to keep, independent of this app.
+				Want chat history and practice sessions too? See <a href="/about#retain-heading">Export
+				everything</a> on the About page.
 			</p>
 		</div>
 		<div class="notebook-actions">

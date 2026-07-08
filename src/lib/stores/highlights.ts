@@ -151,6 +151,16 @@ export function removeNote(slug: string, id: string): void {
 	writeList(NOTE_PREFIX + slug, next);
 }
 
+/** Read a book's highlights/notes straight from localStorage, independent of whichever slug the
+ * reactive `highlights`/`notes` stores currently track (SPEC.md §9 "export everything" needs every
+ * book's data, not just the one open in the UI right now — see `$lib/utils/export-all`). */
+export function getStoredHighlightsAndNotes(slug: string): { highlights: Highlight[]; notes: Note[] } {
+	return {
+		highlights: readList<Highlight>(HIGHLIGHT_PREFIX + slug),
+		notes: readList<Note>(NOTE_PREFIX + slug)
+	};
+}
+
 export function clearAnnotations(slug: string): void {
 	initAnnotations(slug);
 	highlights.set([]);

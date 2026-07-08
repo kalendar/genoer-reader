@@ -12,7 +12,7 @@
 	// later milestones (chat, concept map, study features) can read "the current book/graph"
 	// reactively without re-fetching or prop-drilling.
 	$effect(() => {
-		setCurrentBook(data.slug, data.book);
+		setCurrentBook(data.slug, data.book, data.source);
 		setCurrentGraph(data.slug, data.graph);
 	});
 
@@ -45,6 +45,21 @@
 	/>
 
 	<main id="main-content" tabindex="-1">
+		{#if data.source.kind !== 'bundled'}
+			<p class="custom-source-banner" role="status">
+				Reading a book loaded {data.source.kind === 'url' ? 'from a URL' : 'from a local file'} —
+				not the bundled reference book.
+				<a href="/">Switch books</a>
+			</p>
+		{/if}
+		{#if data.warnings.length > 0}
+			<details class="custom-source-warnings">
+				<summary>{data.warnings.length} data warning{data.warnings.length === 1 ? '' : 's'} for this book</summary>
+				<ul>
+					{#each data.warnings as w (w)}<li>{w}</li>{/each}
+				</ul>
+			</details>
+		{/if}
 		{@render children()}
 	</main>
 </div>

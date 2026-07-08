@@ -76,3 +76,15 @@ export function exportHistory(slug: string, turns: ChatTurn[]): void {
 export function newId(): string {
 	return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+/** Merge previously exported turns into this book's history, deduped by id (non-destructive —
+ * SPEC.md §9 "Retain" import). Returns the count actually added (new ids only). */
+export function importHistory(slug: string, turns: ChatTurn[]): number {
+	const existing = loadHistory(slug);
+	const existingIds = new Set(existing.map((t) => t.id));
+	const toAdd = turns.filter((t) => t && typeof t.id === 'string' && !existingIds.has(t.id));
+	if (toAdd.length === 0) return 0;
+	const merged = [...existing, ...toAdd].sort((a, b) => a.createdAt - b.createdAt);
+	saveHistory(slug, merged);
+	return toAdd.length;
+}

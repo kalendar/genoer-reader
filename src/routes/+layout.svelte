@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import favicon from '$lib/assets/favicon.svg';
+	import { registerServiceWorker } from '$lib/utils/storage';
+	import { REPO_URL } from '$lib/utils/repo';
 
 	let { children } = $props();
 
@@ -16,6 +18,8 @@
 	let navEl: HTMLElement | undefined = $state();
 
 	onMount(() => {
+		void registerServiceWorker();
+
 		if (!navEl || typeof ResizeObserver === 'undefined') return;
 		const el = navEl;
 		const setNavHeight = () => {
@@ -26,11 +30,18 @@
 		ro.observe(el);
 		return () => ro.disconnect();
 	});
+
+	// /chat fills exactly the viewport height left after the nav (see ChatPanel.svelte's `.chat`
+	// rule) and scrolls internally — a global footer below it would either get clipped or force a
+	// second, confusing outer scrollbar, so it's the one route that opts out.
+	let showGlobalFooter = $derived(!pathname.startsWith('/chat'));
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+<a href="#app-main" class="skip-link">Skip to content</a>
 
 <header class="app-nav" bind:this={navEl}>
 	<a class="app-nav-brand" href="/">GenOER Reader</a>
@@ -40,7 +51,21 @@
 		<a href="/chat" aria-current={pathname.startsWith('/chat') ? 'page' : undefined}>Chat</a>
 		<a href="/pathways" aria-current={pathname.startsWith('/pathways') ? 'page' : undefined}>Pathways</a>
 		<a href="/notebook" aria-current={pathname.startsWith('/notebook') ? 'page' : undefined}>Notebook</a>
+		<a href="/about" aria-current={pathname === '/about' ? 'page' : undefined}>About</a>
 	</nav>
 </header>
 
-{@render children()}
+<div id="app-main" tabindex="-1">
+	{@render children()}
+</div>
+
+{#if showGlobalFooter}
+	<footer class="global-footer">
+		<p>
+			GenOER Reader is free software and free to use — no accounts, no analytics, nothing leaves
+			your browser except fetching book/model files.
+			<a href={REPO_URL} rel="noopener noreferrer" target="_blank">Fork it on GitHub</a>
+			&middot; <a href="/about">About &amp; the 5Rs</a>
+		</p>
+	</footer>
+{/if}

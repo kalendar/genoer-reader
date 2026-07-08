@@ -16,6 +16,7 @@
  */
 import { writable } from 'svelte/store';
 import { DEFAULT_BOOK_SLUG, type Book } from '$lib/data/book';
+import type { BookSourceRef } from '$lib/data/book-source';
 
 /** Slug of the book currently open in the reader. */
 export const currentBookSlug = writable<string>(DEFAULT_BOOK_SLUG);
@@ -23,8 +24,13 @@ export const currentBookSlug = writable<string>(DEFAULT_BOOK_SLUG);
 /** The currently open book's parsed data, or null before the first load resolves. */
 export const currentBook = writable<Book | null>(null);
 
+/** Where the currently open book came from (bundled / a URL / a local file) — SPEC.md §8/§9. Used
+ * by the About page's "view/download the data" affordances and by the footer/attribution. */
+export const currentBookSource = writable<BookSourceRef | null>(null);
+
 /** Called by the reader layout once its `load` function resolves a book. */
-export function setCurrentBook(slug: string, book: Book): void {
+export function setCurrentBook(slug: string, book: Book, source?: BookSourceRef | null): void {
 	currentBookSlug.set(slug);
 	currentBook.set(book);
+	if (source) currentBookSource.set(source);
 }

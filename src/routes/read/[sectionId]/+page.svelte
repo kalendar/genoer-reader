@@ -12,6 +12,7 @@
 	import SelectionToolbar from '$lib/components/SelectionToolbar.svelte';
 	import HighlightCard from '$lib/components/HighlightCard.svelte';
 	import BlockNoteCard from '$lib/components/BlockNoteCard.svelte';
+	import JsonViewer from '$lib/components/JsonViewer.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -177,6 +178,11 @@
 		<a class="section-map-link" href="/practice/{data.section.id}">
 			Practice this section &rarr;
 		</a>
+		<JsonViewer
+			data={data.section}
+			label="View this section's JSON"
+			filename="{data.slug}-{data.section.id}.json"
+		/>
 	</header>
 
 	{#if data.graph}

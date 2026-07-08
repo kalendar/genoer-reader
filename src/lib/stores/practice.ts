@@ -70,3 +70,14 @@ export function clearPracticeHistory(slug: string): void {
 export function sectionSessions(slug: string, sectionId: string): PracticeSession[] {
 	return loadSessions(slug).filter((s) => s.sectionId === sectionId);
 }
+
+/** Merge previously exported sessions into this book's history, deduped by id (non-destructive —
+ * SPEC.md §9 "Retain" import). Returns the count actually added. */
+export function importSessions(slug: string, sessions: PracticeSession[]): number {
+	const existing = loadSessions(slug);
+	const existingIds = new Set(existing.map((s) => s.id));
+	const toAdd = sessions.filter((s) => s && typeof s.id === 'string' && !existingIds.has(s.id));
+	if (toAdd.length === 0) return 0;
+	saveSessions(slug, [...toAdd, ...existing]);
+	return toAdd.length;
+}

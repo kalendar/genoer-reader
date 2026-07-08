@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { GraphIndex, GraphNode, GraphEdge } from '$lib/data/graph';
 	import { getNode } from '$lib/data/graph';
+	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
 	let {
 		graph,
@@ -144,6 +145,15 @@
 			<a class="detail-panel-map-link" href="/pathways?concept={encodeURIComponent(node.id)}">
 				Path to this concept &rarr;
 			</a>
+		{/if}
+
+		<JsonViewer data={node} label="View this node's JSON" filename="{node.kind}-{node.id}.json" />
+		{#if edgeRows.length > 0}
+			<JsonViewer
+				data={edgeRows.map((r) => r.edge)}
+				label="View this node's edges JSON ({edgeRows.length})"
+				filename="{node.kind}-{node.id}-edges.json"
+			/>
 		{/if}
 	</div>
 {/if}

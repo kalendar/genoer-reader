@@ -89,14 +89,15 @@ export interface GraphData {
 	edges: GraphEdge[];
 }
 
-/** Where a book's `graph.json` lives, given its slug (parallels `bookUrl` in `$lib/data/book.ts`). */
-export function graphUrl(slug: string): string {
-	return `/books/${slug}/graph.json`;
+/** Where a book's `graph.json` lives, given its slug (parallels `bookUrl` in `$lib/data/book.ts`).
+ * Pass `baseUrl` for a "load your own" book hosted elsewhere (SPEC.md §8). */
+export function graphUrl(slug: string, baseUrl?: string): string {
+	return baseUrl ? `${baseUrl}graph.json` : `/books/${slug}/graph.json`;
 }
 
-class GraphValidationError extends Error {}
+export class GraphValidationError extends Error {}
 
-function validateGraph(data: unknown, slug: string): asserts data is GraphData {
+export function validateGraph(data: unknown, slug: string): asserts data is GraphData {
 	if (!data || typeof data !== 'object') {
 		throw new GraphValidationError(`Graph "${slug}": graph.json is not an object`);
 	}
@@ -114,6 +115,24 @@ function validateGraph(data: unknown, slug: string): asserts data is GraphData {
 	}
 }
 
+/**
+ * Cross-check against a loaded `Book` (SPEC.md §8: "cross-checks when a graph is present (concept
+ * `defined_in` ids resolve to real sections)"). Non-fatal — returns human-readable warning strings
+ * rather than throwing, since a few dangling references shouldn't disable the whole graph. Callers
+ * decide what to do with the warnings (console, or surface in a "load your own" report).
+ */
+export function crossCheckGraphAgainstBook(graph: GraphData, bookSectionIds: Set<string>): string[] {
+	const warnings: string[] = [];
+	for (const concept of graph.nodes.concepts) {
+		if (concept.defined_in && !bookSectionIds.has(concept.defined_in)) {
+			warnings.push(
+				`Graph "${graph.book}": concept "${concept.id}" has defined_in "${concept.defined_in}", which is not a section in this book.`
+			);
+		}
+	}
+	return warnings;
+}
+
 /** In-memory cache of in-flight/completed graph loads, keyed by slug (parallels `bookCache`). */
 const graphCache = new Map<string, Promise<GraphData | null>>();
 
@@ -122,14 +141,15 @@ const graphCache = new Map<string, Promise<GraphData | null>>();
  * a supported, expected state (SPEC.md §8 "missing graph ⇒ map, pathways, and concept highlighting
  * disable"), so this resolves `null` on any failure (404, network error, bad shape) and warns to
  * the console rather than breaking the caller. Pass the `fetch` from a SvelteKit `load` event when
- * calling this from a `load` function.
+ * calling this from a `load` function; pass `baseUrl` for a "load your own" book hosted elsewhere.
  */
-export function loadGraph(slug: string, fetchImpl: typeof fetch = fetch): Promise<GraphData | null> {
-	let cached = graphCache.get(slug);
+export function loadGraph(slug: string, fetchImpl: typeof fetch = fetch, baseUrl?: string): Promise<GraphData | null> {
+	const cacheKey = baseUrl ? `${baseUrl}::${slug}` : slug;
+	let cached = graphCache.get(cacheKey);
 	if (!cached) {
 		cached = (async () => {
 			try {
-				const res = await fetchImpl(graphUrl(slug));
+				const res = await fetchImpl(graphUrl(slug, baseUrl));
 				if (!res.ok) {
 					if (res.status !== 404) {
 						console.warn(`Graph "${slug}": HTTP ${res.status} loading graph.json — map disabled for this book.`);
@@ -144,7 +164,7 @@ export function loadGraph(slug: string, fetchImpl: typeof fetch = fetch): Promis
 				return null;
 			}
 		})();
-		graphCache.set(slug, cached);
+		graphCache.set(cacheKey, cached);
 	}
 	return cached;
 }

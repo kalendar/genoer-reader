@@ -1,12 +1,14 @@
 import { error } from '@sveltejs/kit';
-import { loadBook, findSectionIndex, DEFAULT_BOOK_SLUG } from '$lib/data/book';
+import { findSectionIndex } from '$lib/data/book';
 import type { PageLoad } from './$types';
 
+// Mirrors /read (SPEC.md §2/§13 milestone 1) — a fully static page per section of the bundled book;
+// a `?book=` param (SPEC.md §8) is resolved once by the parent `/read` layout (`parent()` below)
+// rather than re-fetched here.
 export const prerender = true;
 
-export const load: PageLoad = async ({ params, fetch }) => {
-	const slug = DEFAULT_BOOK_SLUG;
-	const book = await loadBook(slug, fetch);
+export const load: PageLoad = async ({ params, parent }) => {
+	const { slug, book } = await parent();
 	const index = findSectionIndex(book, params.sectionId);
 	if (index === -1) {
 		error(404, `No such section: "${params.sectionId}"`);

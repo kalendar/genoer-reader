@@ -74,21 +74,23 @@ export interface Book {
 /** Slug of the bundled reference book (SPEC.md §8) and the store's default. */
 export const DEFAULT_BOOK_SLUG = 'entrepreneurship';
 
-/** Where a book's `book.json` lives, given its slug. */
-export function bookUrl(slug: string): string {
-	return `/books/${slug}/book.json`;
+/** Where a book's `book.json` lives, given its slug. Pass `baseUrl` (a directory URL, trailing
+ * slash) for a "load your own" book hosted elsewhere (SPEC.md §8); omit it for the bundled book. */
+export function bookUrl(slug: string, baseUrl?: string): string {
+	return baseUrl ? `${baseUrl}book.json` : `/books/${slug}/book.json`;
 }
 
 /** Base path to resolve a section block's relative `media/<file>` image src against. */
-export function mediaBase(slug: string): string {
-	return `/books/${slug}/media/`;
+export function mediaBase(slug: string, baseUrl?: string): string {
+	return baseUrl ? `${baseUrl}media/` : `/books/${slug}/media/`;
 }
 
-class BookValidationError extends Error {}
+export class BookValidationError extends Error {}
 
 /** Minimal structural validation (SPEC.md §8) — fail loudly with a specific, human-readable error
- * rather than letting the reader render a half-broken page. */
-function validateBook(data: unknown, slug: string): asserts data is Book {
+ * rather than letting the reader render a half-broken page. Exported so the "load your own" UI can
+ * run the same checks client-side before committing a local file to storage. */
+export function validateBook(data: unknown, slug: string): asserts data is Book {
 	if (!data || typeof data !== 'object') {
 		throw new BookValidationError(`Book "${slug}": book.json is not an object`);
 	}
@@ -111,6 +113,13 @@ function validateBook(data: unknown, slug: string): asserts data is Book {
 		if (!Array.isArray(section.blocks)) {
 			throw new BookValidationError(`Book "${slug}": sections[${i}] ("${section.id}") has no blocks array`);
 		}
+		section.blocks.forEach((block, j) => {
+			if (!block || typeof block.anchor !== 'string') {
+				throw new BookValidationError(
+					`Book "${slug}": sections[${i}] ("${section.id}") blocks[${j}] has no anchor`
+				);
+			}
+		});
 	});
 }
 
@@ -120,22 +129,25 @@ const bookCache = new Map<string, Promise<Book>>();
 
 /**
  * Load and validate a book by slug. Pass the `fetch` from a SvelteKit `load` event when calling
- * this from a `load` function — it works uniformly during prerendering and in the browser.
+ * this from a `load` function — it works uniformly during prerendering and in the browser. Pass
+ * `baseUrl` for a "load your own" book hosted elsewhere (SPEC.md §8); the cache key includes it so
+ * two different sources never collide even if they happen to declare the same slug.
  */
-export function loadBook(slug: string, fetchImpl: typeof fetch = fetch): Promise<Book> {
-	let cached = bookCache.get(slug);
+export function loadBook(slug: string, fetchImpl: typeof fetch = fetch, baseUrl?: string): Promise<Book> {
+	const cacheKey = baseUrl ? `${baseUrl}::${slug}` : slug;
+	let cached = bookCache.get(cacheKey);
 	if (!cached) {
 		cached = (async () => {
-			const res = await fetchImpl(bookUrl(slug));
+			const res = await fetchImpl(bookUrl(slug, baseUrl));
 			if (!res.ok) {
-				throw new Error(`Failed to load book "${slug}": HTTP ${res.status}`);
+				throw new Error(`Failed to load book "${slug}": HTTP ${res.status} fetching ${bookUrl(slug, baseUrl)}`);
 			}
 			const data = await res.json();
 			validateBook(data, slug);
 			return data;
 		})();
-		cached.catch(() => bookCache.delete(slug)); // don't cache failures
-		bookCache.set(slug, cached);
+		cached.catch(() => bookCache.delete(cacheKey)); // don't cache failures
+		bookCache.set(cacheKey, cached);
 	}
 	return cached;
 }

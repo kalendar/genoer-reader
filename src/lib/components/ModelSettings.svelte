@@ -9,10 +9,12 @@
 	 * indicator; and download progress. Nothing downloads until the parent's
 	 * onLoad fires from an explicit click here.
 	 */
+	import { onMount } from 'svelte';
 	import { MODELS, formatBytes, type ModelEntry } from '$lib/models/registry';
 	import type { DeviceSignals, Recommendation } from '$lib/models/probe';
 	import type { Backend } from '$lib/engine';
 	import type { ModelSettings } from '$lib/models/settings';
+	import { getStorageUsage, listCachedModelRepos, clearModelCache, type StorageUsage, type CachedModelInfo } from '$lib/utils/storage';
 
 	let {
 		settings = $bindable(),
@@ -40,6 +42,41 @@
 	const isCustom = $derived(settings.modelId === 'custom');
 	// The currently selected model differs from what's actually loaded → offer (re)load.
 	const dirty = $derived(loadedModelId !== settings.modelId || status === 'idle' || status === 'error');
+
+	// ---- Cache Storage usage (SPEC.md §10) -------------------------------------
+	let storageUsage = $state<StorageUsage | null>(null);
+	let cachedModels = $state<CachedModelInfo[]>([]);
+	let clearingCache = $state(false);
+	let clearMessage = $state<string | null>(null);
+
+	async function refreshStorageInfo() {
+		const [usage, models] = await Promise.all([getStorageUsage(), listCachedModelRepos()]);
+		storageUsage = usage;
+		cachedModels = models;
+	}
+
+	onMount(() => {
+		void refreshStorageInfo();
+	});
+
+	async function handleClearCache() {
+		if (
+			!confirm(
+				'Remove all downloaded model weights from this browser? You\'ll need to re-download a model to chat again. A model already loaded in this tab stays usable until you reload the page.'
+			)
+		) {
+			return;
+		}
+		clearingCache = true;
+		clearMessage = null;
+		try {
+			await clearModelCache();
+			await refreshStorageInfo();
+			clearMessage = 'Downloaded models removed.';
+		} finally {
+			clearingCache = false;
+		}
+	}
 </script>
 
 <div class="model-settings">
@@ -168,6 +205,42 @@
 			</ul>
 		</details>
 	{/if}
+
+	<details class="storage-usage">
+		<summary>Storage usage (SPEC.md §10 offline)</summary>
+		{#if storageUsage}
+			<ul>
+				{#if storageUsage.usage != null && storageUsage.quota != null}
+					<li>
+						Using {formatBytes(storageUsage.usage)} of {formatBytes(storageUsage.quota)} available to
+						this site
+					</li>
+				{/if}
+				<li>
+					Persistent storage: {storageUsage.persisted
+						? 'granted (won\'t be auto-evicted under storage pressure)'
+						: 'not granted (requested automatically after a model finishes downloading)'}
+				</li>
+			</ul>
+		{/if}
+
+		{#if cachedModels.length > 0}
+			<p class="storage-models-label">Downloaded model weights:</p>
+			<ul class="storage-models">
+				{#each cachedModels as m (m.repo)}
+					<li>
+						<code>{m.repo}</code> — {m.fileCount} file{m.fileCount === 1 ? '' : 's'}, ~{formatBytes(m.approxBytes)}
+					</li>
+				{/each}
+			</ul>
+			<button type="button" class="clear-cache-btn" onclick={handleClearCache} disabled={clearingCache}>
+				{clearingCache ? 'Removing…' : 'Remove downloaded models'}
+			</button>
+		{:else}
+			<p class="storage-empty">No model weights downloaded yet in this browser.</p>
+		{/if}
+		{#if clearMessage}<p class="storage-clear-message" role="status">{clearMessage}</p>{/if}
+	</details>
 </div>
 
 <style>
@@ -361,5 +434,52 @@
 	.signals ul {
 		margin: 0.3rem 0 0;
 		padding-left: 1.1rem;
+	}
+
+	.storage-usage {
+		font-size: 0.8rem;
+		color: var(--color-text-muted);
+		border-top: 1px solid var(--color-border);
+		padding-top: 0.6rem;
+	}
+	.storage-usage summary {
+		cursor: pointer;
+		color: var(--color-text);
+	}
+	.storage-usage ul {
+		margin: 0.4rem 0;
+		padding-left: 1.1rem;
+	}
+	.storage-models-label {
+		margin: 0.5rem 0 0.2rem;
+		font-weight: 600;
+		color: var(--color-text);
+	}
+	.storage-models {
+		margin: 0 0 0.5rem;
+		padding-left: 1.1rem;
+	}
+	.storage-models code {
+		font-size: 0.78rem;
+	}
+	.storage-empty {
+		margin: 0.3rem 0;
+	}
+	.clear-cache-btn {
+		background: var(--color-bg-raised);
+		border: 1px solid #a12a2a;
+		color: #a12a2a;
+		border-radius: 0.3rem;
+		padding: 0.4rem 0.8rem;
+		cursor: pointer;
+		font-size: 0.8rem;
+	}
+	.clear-cache-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+	.storage-clear-message {
+		margin: 0.4rem 0 0;
+		color: #2e7d32;
 	}
 </style>
