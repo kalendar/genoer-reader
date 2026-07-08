@@ -219,9 +219,7 @@ test('selectBlocks treats the budget as a hard ceiling — even for definition b
 					chapter: 1,
 					defined_in: 'big1'
 				}
-			],
-			entities: [],
-			sections: [{ id: 'section:big1', module: 'big1', number: '1.1', title: 'Huge Section', chapter: 1 }]
+			]
 		},
 		edges: [{ type: 'defines', source: 'concept:business-plan', target: 'section:big1' }]
 	};
