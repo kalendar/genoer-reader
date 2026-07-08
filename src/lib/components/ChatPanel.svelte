@@ -83,11 +83,23 @@
 		return Math.ceil(text.length / 4);
 	}
 
+	/**
+	 * Passage budget for retrieval. Two ceilings apply: the model's context
+	 * window (minus generation headroom, system prompt and history), AND an
+	 * empirical prompt-size ceiling — on-device WebGPU prefill is ~3s at ~1.5k
+	 * total prompt tokens and degrades sharply beyond ~2k (measured via the
+	 * /dev/engine-test harness, 2026-07-08). Spending the whole 4k context on
+	 * passages produced minutes-long prefills; precision beats volume here.
+	 */
+	const PASSAGE_BUDGET_CEILING = 1000;
 	const budgetTokens = $derived.by(() => {
 		const historyTokens = turns.reduce((sum, t) => sum + approxTokens(t.content), 0);
 		return Math.max(
-			800,
-			engineState.settings.contextLength - GEN_HEADROOM - SYSTEM_RESERVE - historyTokens
+			400,
+			Math.min(
+				PASSAGE_BUDGET_CEILING,
+				engineState.settings.contextLength - GEN_HEADROOM - SYSTEM_RESERVE - historyTokens
+			)
 		);
 	});
 

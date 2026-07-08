@@ -12,13 +12,35 @@ function renderPassages(blocks: PracticeBlock[]): string {
 		.join('\n\n');
 }
 
-/** Build the generation prompt: grounded ONLY on this section's blocks, a mix of multiple-choice
- * and short-answer questions, each tagged with the passage id it comes from. */
+/**
+ * Prompt-size ceiling for the passage portion. Empirical (see the
+ * /dev/engine-test harness, 2026-07-08): on-device WebGPU prefill is ~3s at
+ * ~1.5k total prompt tokens and degrades sharply past ~2k on the pinned
+ * runtime — long sections (some run 10k+ tokens) must be trimmed, not dumped.
+ */
+const PASSAGE_TOKEN_BUDGET = 1000;
+
+function capBlocks(blocks: PracticeBlock[], budget = PASSAGE_TOKEN_BUDGET): PracticeBlock[] {
+	const out: PracticeBlock[] = [];
+	let used = 0;
+	for (const b of blocks) {
+		const t = Math.ceil(b.text.length / 4);
+		if (used + t > budget && out.length > 0) break;
+		used += t;
+		out.push(b);
+	}
+	return out;
+}
+
+/** Build the generation prompt: grounded ONLY on this section's blocks (trimmed
+ * to the prompt-size ceiling), a mix of multiple-choice and short-answer
+ * questions, each tagged with the passage id it comes from. */
 export function buildPracticePrompt(
 	sectionTitle: string,
-	blocks: PracticeBlock[],
+	allBlocks: PracticeBlock[],
 	count = 5
 ): { system: string; user: string } {
+	const blocks = capBlocks(allBlocks);
 	const system = [
 		'You write short self-check study questions for students, grounded ONLY in the numbered passages given.',
 		'Every question must be answerable from exactly one passage, and you must record that passage\'s bracketed id as "anchor".',

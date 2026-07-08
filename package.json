@@ -24,7 +24,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
-		"@huggingface/transformers": "^4.2.0",
+		"@huggingface/transformers": "^3.7.1",
 		"cytoscape": "^3.34.0",
 		"cytoscape-dagre": "^4.0.0",
 		"cytoscape-fcose": "^2.2.0"

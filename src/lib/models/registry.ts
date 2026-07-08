@@ -70,17 +70,18 @@ export const MODELS: ModelEntry[] = [
 		name: 'Qwen3 0.6B',
 		tier: 'default',
 		repo: 'onnx-community/Qwen3-0.6B-ONNX',
-		// q4 (fp32 compute), NOT q4f16: the fp16 WebGPU execution path in the
-		// currently-shipped onnxruntime-web crashes at inference (SafeInt integer
-		// overflow in OrtRun) — field-confirmed on Chrome/macOS, 2026-07-08.
-		// Same file serves the CPU tier, so one download covers both backends.
-		dtype: 'q4',
+		// q4f16 — the exact config of the official Transformers.js WebGPU demo.
+		// Verified fast+stable on transformers.js 3.7.1 (pinned in package.json):
+		// the 4.x line's rewritten WebGPU runtime crashed this dtype at inference
+		// on Chrome/macOS (see /dev/engine-test harness findings, 2026-07-08).
+		// Do not bump to transformers.js 4.x without re-running the harness ladder.
+		dtype: 'q4f16',
 		availableDtypes: ['q4', 'q4f16', 'int8', 'quantized', 'bnb4', 'fp16'],
-		approxBytes: Math.round(919 * MB), // model_q4.onnx = 919 MB
+		approxBytes: Math.round(570 * MB), // model_q4f16.onnx = 570 MB
 		license: 'Apache-2.0',
 		backend: 'webgpu',
 		params: '0.6B',
-		blurb: 'The recommended default — stable fp32 GPU compute, and the same weights power the CPU fallback, so one download covers both.'
+		blurb: 'The recommended default — the exact model and settings of the official Transformers.js WebGPU demo, with q4 and CPU fallbacks if your GPU misbehaves.'
 	},
 	// NOTE: Qwen3-1.7B-ONNX was removed from the registry (2026-07-08): its only
 	// quantized variants are MONOLITHIC files ≥ 1.4 GB, and onnxruntime-web
@@ -98,7 +99,7 @@ export const MODELS: ModelEntry[] = [
 		license: 'Apache-2.0',
 		backend: 'webgpu',
 		params: '4B',
-		blurb: 'Best answer quality — experimental: ships only fp16-compute variants, which currently crash on some Chrome/GPU combinations, and it has no q4 fallback. Needs GPU buffer limits above 4 GiB.'
+		blurb: 'Best answer quality — the largest download, needs GPU buffer limits above 4 GiB, and has no q4 fallback variant if fp16 compute misbehaves on your GPU.'
 	}
 ];
 
