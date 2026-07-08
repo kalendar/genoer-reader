@@ -13,13 +13,12 @@
 	 * engine interface, not a special case.
 	 */
 	import { onMount } from 'svelte';
-	import type { Engine, Backend, ChatMessage } from '$lib/engine';
-	import { recommendForDevice, type DeviceSignals, type Recommendation } from '$lib/models/probe';
-	import { loadSettings, saveSettings, resolveModel, type ModelSettings } from '$lib/models/settings';
+	import type { ChatMessage } from '$lib/engine';
 	import { buildPracticePrompt, buildEvaluationPrompt } from '$lib/practice/prompt';
 	import { parseGeneratedQuestions, parseEvaluation } from '$lib/practice/parse';
 	import type { GeneratedQuestion, PracticeAttempt, PracticeSession, PracticeBlock } from '$lib/practice/types';
 	import { addSession, recordAttempt, sectionSessions, clearPracticeHistory } from '$lib/stores/practice';
+	import { engineState } from '$lib/stores/engine-state.svelte';
 	import ModelSettingsPanel from './ModelSettings.svelte';
 
 	let {
@@ -36,19 +35,12 @@
 		blocks: PracticeBlock[];
 	} = $props();
 
-	// ---- engine + model settings (mirrors ChatPanel) --------------------------
-	let settings = $state<ModelSettings>({ modelId: 'qwen3-1.7b', contextLength: 8192, device: 'auto' });
-	let signals = $state<DeviceSignals | null>(null);
-	let recommendation = $state<Recommendation | null>(null);
-	let status = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
-	let progress = $state(0);
-	let progressLabel = $state('');
-	let backend = $state<Backend | null>(null);
-	let loadedModelId = $state<string | null>(null);
-	let engineError = $state<string | null>(null);
-	let showSettings = $state(true);
-
-	let engine: Engine | null = null;
+	// ---- engine + model settings ----------------------------------------------
+	// Shared with ChatPanel via `$lib/stores/engine-state.svelte` — this panel is
+	// a second, independent consumer of the same singleton engine/worker (SPEC
+	// §5), not a special case, and it must never re-prompt for a model that's
+	// already loaded from the chat pane (or vice versa).
+	let showSettings = $state(engineState.status !== 'ready');
 
 	// ---- practice state ---------------------------------------------------
 	let generating = $state(false);
@@ -64,46 +56,22 @@
 
 	onMount(() => {
 		history = sectionSessions(slug, sectionId);
-		const persisted = loadSettings();
-		(async () => {
-			const { signals: sig, recommendation: reco } = await recommendForDevice();
-			signals = sig;
-			recommendation = reco;
-			settings = persisted ?? { modelId: reco.model.id, contextLength: reco.contextLength, device: 'auto' };
-		})();
+		void engineState.ensureProbed();
 	});
 
-	async function loadModel() {
-		status = 'loading';
-		engineError = null;
-		progress = 0;
-		progressLabel = 'Preparing…';
-		try {
-			if (!engine) {
-				const { createEngine } = await import('$lib/engine');
-				engine = createEngine();
-			}
-			const resolved = resolveModel(settings);
-			const res = await engine.loadModel(
-				resolved.repo,
-				{ dtype: resolved.dtype, device: settings.device, maxContext: settings.contextLength },
-				(p) => {
-					if (typeof p.overall === 'number') progress = p.overall;
-					progressLabel = p.file ? `Downloading ${p.file}… ${Math.round(progress * 100)}%` : '';
-				}
-			);
-			backend = res.backend;
-			loadedModelId = settings.modelId;
-			status = 'ready';
+	// See ChatPanel.svelte for why this only fires on the idle/loading/error → ready
+	// transition rather than on every read of `status` while ready.
+	let prevEngineStatus = engineState.status;
+	$effect(() => {
+		const s = engineState.status;
+		if (prevEngineStatus !== 'ready' && s === 'ready') {
 			showSettings = false;
-			saveSettings(settings);
-		} catch (e) {
-			status = 'error';
-			engineError = e instanceof Error ? e.message : String(e);
 		}
-	}
+		prevEngineStatus = s;
+	});
 
 	async function generateFullText(messages: ChatMessage[]): Promise<string> {
+		const engine = engineState.getEngine();
 		if (!engine) throw new Error('Model not loaded');
 		const stream = engine.chat(messages, { maxNewTokens: 1400, temperature: 0.6 });
 		let text = '';
@@ -112,7 +80,7 @@
 	}
 
 	async function generateQuestions() {
-		if (status !== 'ready' || !engine || generating) return;
+		if (engineState.status !== 'ready' || !engineState.getEngine() || generating) return;
 		generating = true;
 		genError = null;
 		mcSelections = {};
@@ -167,7 +135,7 @@
 	}
 
 	async function submitShort(q: GeneratedQuestion) {
-		if (!session || status !== 'ready' || !engine) return;
+		if (!session || engineState.status !== 'ready' || !engineState.getEngine()) return;
 		const answer = (shortDrafts[q.id] ?? '').trim();
 		if (!answer) return;
 		const sourceBlock = blockByAnchor.get(q.anchor);
@@ -223,34 +191,39 @@
 		</button>
 	</header>
 
-	{#if showSettings || status !== 'ready'}
+	{#if showSettings || engineState.status !== 'ready'}
 		<div class="settings-wrap">
 			<ModelSettingsPanel
-				bind:settings
-				{signals}
-				{recommendation}
-				{status}
-				{progress}
-				{progressLabel}
-				{backend}
-				{loadedModelId}
-				onLoad={loadModel}
+				bind:settings={engineState.settings}
+				signals={engineState.signals}
+				recommendation={engineState.recommendation}
+				status={engineState.status}
+				progress={engineState.progress}
+				progressLabel={engineState.progressLabel}
+				backend={engineState.backend}
+				loadedModelId={engineState.loadedModelId}
+				onLoad={() => engineState.loadModel()}
 			/>
 		</div>
 	{/if}
 
-	{#if status !== 'ready'}
+	{#if engineState.status !== 'ready'}
 		<p class="degrade-note">
 			Load a model above to generate practice questions. Everything else in the reader works
 			without it — this feature just can't run yet.
 		</p>
 	{/if}
 
-	{#if engineError}<p class="error-note">{engineError}</p>{/if}
+	{#if engineState.engineError}<p class="error-note">{engineState.engineError}</p>{/if}
 	{#if genError}<p class="error-note">{genError}</p>{/if}
 
 	<div class="practice-actions">
-		<button type="button" class="generate-btn" disabled={status !== 'ready' || generating} onclick={generateQuestions}>
+		<button
+			type="button"
+			class="generate-btn"
+			disabled={engineState.status !== 'ready' || generating}
+			onclick={generateQuestions}
+		>
 			{generating ? 'Generating…' : 'Generate practice questions'}
 		</button>
 		{#if history.length > 0}
@@ -308,7 +281,7 @@
 							<button
 								type="button"
 								class="submit-btn"
-								disabled={!(shortDrafts[q.id] ?? '').trim() || grading[q.id] || status !== 'ready'}
+								disabled={!(shortDrafts[q.id] ?? '').trim() || grading[q.id] || engineState.status !== 'ready'}
 								onclick={() => submitShort(q)}
 							>
 								{grading[q.id] ? 'Grading…' : 'Submit answer'}
