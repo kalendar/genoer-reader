@@ -63,6 +63,8 @@ async function resolveBackend(requested?: Backend | 'auto'): Promise<Backend> {
 // replaces it. `activeStopper` lets an abort message interrupt generation.
 let generator: TextGenerationPipeline | null = null;
 let activeStopper: InterruptableStoppingCriteria | null = null;
+/** Repo id of the loaded model — used for model-family prompt quirks. */
+let currentModelId: string | null = null;
 
 async function handleLoad(id: number, modelId: string, dtype?: string, device?: Backend | 'auto') {
 	const backend = await resolveBackend(device);
@@ -87,6 +89,7 @@ async function handleLoad(id: number, modelId: string, dtype?: string, device?: 
 			post({ type: 'load-progress', id, progress: p as LoadProgress });
 		}
 	})) as unknown as TextGenerationPipeline;
+	currentModelId = modelId;
 
 	post({ type: 'ready', id, backend, modelId });
 }
@@ -104,37 +107,37 @@ async function handleGenerate(
 	const tokenizer = generator.tokenizer;
 	const started = performance.now();
 
-	// Apply the chat template ourselves so we can pass enable_thinking:false —
-	// Qwen3-family models otherwise open every answer with a <think>…</think>
-	// block, which both delays the visible first token and leaks reasoning
-	// into the response. Unknown template variables are ignored by non-thinking
-	// models, so this is safe across the registry.
-	let prompt: string | null = null;
-	try {
-		prompt = tokenizer.apply_chat_template(messages as never, {
-			add_generation_prompt: true,
-			tokenize: false,
-			enable_thinking: false
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		} as any) as unknown as string;
-		if (typeof prompt !== 'string') prompt = null;
-	} catch {
-		prompt = null;
-	}
+	// GENERATION INPUT: the messages array goes to the pipeline UNTOUCHED in
+	// shape — this is the only call form that has ever generated successfully
+	// in the field. (An earlier attempt pre-rendered the chat template to a
+	// string to pass enable_thinking:false; every generation through that path
+	// crashed the runtime on two machines. Do not reintroduce it.)
+	//
+	// Thinking suppression for Qwen3-family models uses their documented
+	// prompt-level soft switch instead: appending "/no_think" to the final user
+	// message disables the <think> phase. The stream filter below removes the
+	// residual empty think tags. Applied only to Qwen3 repos — other models
+	// would render the literal token.
+	const isQwen3 = /qwen3/i.test(currentModelId ?? '');
+	const genMessages =
+		isQwen3 && messages.length > 0 && messages[messages.length - 1].role === 'user'
+			? [
+					...messages.slice(0, -1),
+					{
+						...messages[messages.length - 1],
+						content: messages[messages.length - 1].content + ' /no_think'
+					}
+				]
+			: messages;
 
-	// Prompt token count via the model's own tokenizer — accurate, cheap.
+	// Prompt token count via the model's own chat template — accurate, cheap.
 	let promptTokens = 0;
 	try {
-		if (prompt) {
-			const enc = tokenizer(prompt) as unknown as { input_ids?: { size?: number } };
-			promptTokens = enc?.input_ids?.size ?? Math.ceil(prompt.length / 4);
-		} else {
-			const ids = tokenizer.apply_chat_template(messages as never, {
-				add_generation_prompt: true,
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			} as any) as unknown as { length?: number } | number[];
-			promptTokens = Array.isArray(ids) ? ids.length : (ids?.length ?? 0);
-		}
+		const ids = tokenizer.apply_chat_template(genMessages as never, {
+			add_generation_prompt: true,
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		} as any) as unknown as { length?: number } | number[];
+		promptTokens = Array.isArray(ids) ? ids.length : (ids?.length ?? 0);
 	} catch {
 		promptTokens = 0;
 	}
@@ -178,7 +181,7 @@ async function handleGenerate(
 	activeStopper = stopper;
 
 	try {
-		await generator((prompt ?? messages) as never, {
+		await generator(genMessages as never, {
 			max_new_tokens: options?.maxNewTokens ?? 512,
 			do_sample: (options?.temperature ?? 0) > 0,
 			temperature: options?.temperature ?? 0.7,
