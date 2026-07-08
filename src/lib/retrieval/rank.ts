@@ -101,26 +101,60 @@ export function selectBlocks(
 	const seen = new Set<string>();
 	let used = 0;
 
+	// The budget is a HARD ceiling. It exists because on-device prefill cost
+	// (and, on some runtimes, stability) scales with total prompt size — a
+	// "must-include" block that bypasses it defeats the entire budgeting
+	// scheme (found the hard way: 1,000-token budgets producing 3,500-token
+	// prompts and minutes-long prefills). Definition blocks get PRIORITY, not
+	// exemption: they are added first, truncated if they alone exceed budget.
+	const push = (sec: (typeof book.sections)[number], block: (typeof sec.blocks)[number], isDefinition: boolean): void => {
+		const remaining = budgetTokens - used;
+		if (remaining <= 0) return;
+		let text = block.text;
+		let tokens = block.tokens;
+		if (tokens > remaining) {
+			// Only worth truncating for priority blocks with meaningful room;
+			// ordinary blocks just don't fit.
+			if (!isDefinition || remaining < 150) return;
+			text = text.slice(0, remaining * 4);
+			const cut = text.lastIndexOf('. ');
+			if (cut > text.length / 2) text = text.slice(0, cut + 1);
+			text += ' […]';
+			tokens = remaining;
+		}
+		seen.add(block.anchor);
+		used += tokens;
+		passages.push({
+			index: passages.length + 1,
+			anchor: block.anchor,
+			sectionId: sec.id,
+			sectionTitle: sec.title,
+			sectionNumber: sec.number,
+			heading: block.heading ?? null,
+			text,
+			tokens,
+			isDefinition
+		});
+	};
+
+	// Phase 1: definition blocks of matched concepts, first claim on the budget.
+	for (const m of matched) {
+		const sec = sectionById.get(m.concept.defined_in);
+		if (!sec) continue;
+		for (const block of sec.blocks) {
+			if (mustInclude.has(block.anchor) && !seen.has(block.anchor)) {
+				push(sec, block, true);
+			}
+		}
+	}
+
+	// Phase 2: fill what remains in ranked order.
 	for (const sectionId of order) {
 		const sec = sectionById.get(sectionId);
 		if (!sec) continue;
 		for (const block of sec.blocks) {
 			if (seen.has(block.anchor)) continue;
-			const required = mustInclude.has(block.anchor);
-			if (!required && used + block.tokens > budgetTokens) continue;
-			seen.add(block.anchor);
-			used += block.tokens;
-			passages.push({
-				index: passages.length + 1,
-				anchor: block.anchor,
-				sectionId: sec.id,
-				sectionTitle: sec.title,
-				sectionNumber: sec.number,
-				heading: block.heading ?? null,
-				text: block.text,
-				tokens: block.tokens,
-				isDefinition: required
-			});
+			push(sec, block, false);
 		}
 	}
 

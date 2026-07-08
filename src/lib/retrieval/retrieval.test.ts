@@ -183,3 +183,57 @@ test('buildGroundedPrompt falls back when the graph yields no match', () => {
 	assert.equal(gp.matchedConcepts.length, 0);
 	assert.deepEqual([...new Set(gp.passages.map((p) => p.sectionId))], ['s1']);
 });
+
+test('selectBlocks treats the budget as a hard ceiling — even for definition blocks', () => {
+	// Regression: definition blocks used to BYPASS the budget entirely, so a
+	// 1,000-token budget could yield 3,500-token prompts (minutes-long prefill
+	// on-device; crashes on some runtimes). Priority means first claim on the
+	// budget, truncated to fit — never exemption from it.
+	const bigBook: RetrievalBook = {
+		title: 'Big Book',
+		sections: [
+			{
+				id: 'big1',
+				title: 'Huge Section',
+				number: '1.1',
+				blocks: [
+					{
+						anchor: 'big1-b1',
+						// A huge defining block: ~2000 estimated tokens.
+						text: ('The business plan is central to any venture. ' + 'x'.repeat(20)).repeat(160),
+						tokens: 2000,
+						heading: null
+					},
+					{ anchor: 'big1-b2', text: 'Another block on planning.', tokens: 8, heading: null }
+				]
+			}
+		]
+	};
+	const bigGraph: Graph = {
+		nodes: {
+			concepts: [
+				{
+					id: 'concept:business-plan',
+					term: 'business plan',
+					definition: 'a plan for a business',
+					chapter: 1,
+					defined_in: 'big1'
+				}
+			],
+			entities: [],
+			sections: [{ id: 'section:big1', module: 'big1', number: '1.1', title: 'Huge Section', chapter: 1 }]
+		},
+		edges: [{ type: 'defines', source: 'concept:business-plan', target: 'section:big1' }]
+	};
+	const index = buildGraphIndex(bigGraph);
+	const matches = matchConcepts('what is a business plan?', index);
+	assert.ok(matches.length > 0, 'concept matches');
+	const ranked = rankSections(matches, index, {});
+	const budget = 500;
+	const passages = selectBlocks(ranked, bigBook, matches, budget);
+	const total = passages.reduce((sum, p) => sum + p.tokens, 0);
+	assert.ok(total <= budget, `total ${total} must be <= budget ${budget}`);
+	assert.ok(passages.length > 0, 'the definition block still gets included (truncated)');
+	assert.ok(passages[0].isDefinition, 'definition block has first claim on the budget');
+	assert.ok(passages[0].text.endsWith('[…]'), 'oversized definition block is visibly truncated');
+});
