@@ -7,6 +7,9 @@
 	 */
 	import type { Highlight, Note } from '$lib/stores/highlights';
 	import { removeHighlight, addNote, updateNote, removeNote } from '$lib/stores/highlights';
+	import { bookQuerySuffix } from '$lib/utils/book-link';
+
+	let bookSuffix = $derived(bookQuerySuffix());
 
 	let {
 		slug,
@@ -126,6 +129,6 @@
 
 	<div class="highlight-card-actions">
 		<button type="button" class="highlight-card-cancel" onclick={deleteHighlight}>Remove highlight</button>
-		<a class="concept-card-map-link" href="/notebook">Open notebook &rarr;</a>
+		<a class="concept-card-map-link" href="/notebook{bookSuffix}">Open notebook &rarr;</a>
 	</div>
 </div>

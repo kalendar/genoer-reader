@@ -5,6 +5,7 @@
 	 * transparent. Each passage deep-links into the reader at block granularity.
 	 */
 	import type { Passage } from '$lib/retrieval';
+	import { bookQuerySuffix } from '$lib/utils/book-link';
 
 	let {
 		passages,
@@ -18,6 +19,7 @@
 
 	// Collapsed by default — the panel is opt-in transparency, not noise.
 	let expanded = $state(false);
+	let bookSuffix = $derived(bookQuerySuffix());
 </script>
 
 {#if passages.length > 0}
@@ -41,7 +43,7 @@
 			<ol class="grounding-list">
 				{#each passages as p (p.anchor)}
 					<li>
-						<a class="grounding-cite" href="/read/{p.sectionId}#{p.anchor}">
+						<a class="grounding-cite" href="/read/{p.sectionId}{bookSuffix}#{p.anchor}">
 							[{p.index}]
 						</a>
 						<div class="grounding-body">

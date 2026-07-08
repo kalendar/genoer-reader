@@ -14,10 +14,13 @@
 	import type { ConceptNode, SearchResult } from '$lib/data/graph';
 	import { prerequisitePathway } from '$lib/data/graph';
 	import MapSearch from '$lib/components/map/MapSearch.svelte';
+	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	let graph = $derived(data.graph);
+	let bookSuffix = $derived(bookQuerySuffix());
+	let bookAmp = $derived(bookAmpParam());
 
 	// Initial concept from the URL (?concept=<id>), same window.location pattern /map uses — this
 	// whole route is prerendered, and `page.url.searchParams` is locked during that pass.
@@ -89,7 +92,7 @@
 				<h2>Path to understanding <em>{target.term}</em></h2>
 				<a
 					class="pathway-graph-link"
-					href="/map?concept={encodeURIComponent(target.id)}&view=prerequisite"
+					href="/map?concept={encodeURIComponent(target.id)}&view=prerequisite{bookAmp}"
 				>
 					View as graph &rarr;
 				</a>
@@ -112,7 +115,7 @@
 						<span class="pathway-step-index">{i === pathway.length - 1 && priorSteps.length > 0 ? 'Goal' : i + 1}</span>
 						<div class="pathway-step-body">
 							{#if step.section}
-								<a class="pathway-step-term" href="/read/{step.section.module}">{step.concept.term}</a>
+								<a class="pathway-step-term" href="/read/{step.section.module}{bookSuffix}">{step.concept.term}</a>
 							{:else}
 								<span class="pathway-step-term">{step.concept.term}</span>
 							{/if}

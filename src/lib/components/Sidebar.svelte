@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TocEntry } from '$lib/data/book';
+	import { bookQuerySuffix } from '$lib/utils/book-link';
 
 	let {
 		toc,
@@ -12,6 +13,8 @@
 		open?: boolean;
 		onClose?: () => void;
 	} = $props();
+
+	let bookSuffix = $derived(bookQuerySuffix());
 </script>
 
 <nav id="toc-sidebar" class="toc-sidebar" class:open aria-label="Table of contents">
@@ -35,7 +38,7 @@
 			{:else if entry.id}
 				<li>
 					<a
-						href="/read/{entry.id}"
+						href="/read/{entry.id}{bookSuffix}"
 						aria-current={currentSectionId === entry.id ? 'page' : undefined}
 						onclick={() => onClose?.()}
 					>

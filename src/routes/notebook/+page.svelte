@@ -18,9 +18,11 @@
 		importAnnotations,
 		clearAnnotations
 	} from '$lib/stores/highlights';
+	import { bookQuerySuffix } from '$lib/utils/book-link';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+	let bookSuffix = $derived(bookQuerySuffix());
 
 	onMount(() => initAnnotations(data.slug));
 
@@ -121,7 +123,7 @@
 					<li class="notebook-item">
 						<blockquote class="notebook-quote">&ldquo;{highlight.text}&rdquo;</blockquote>
 						<div class="notebook-meta">
-							<a href="/read/{highlight.sectionId}#{highlight.anchor}">
+							<a href="/read/{highlight.sectionId}{bookSuffix}#{highlight.anchor}">
 								{highlight.sectionNumber ? `§${highlight.sectionNumber} ` : ''}{highlight.sectionTitle}
 							</a>
 							<span class="notebook-date">{new Date(highlight.createdAt).toLocaleDateString()}</span>
@@ -164,7 +166,7 @@
 				{#each blockNotes as note (note.id)}
 					<li class="notebook-item">
 						<div class="notebook-meta">
-							<a href="/read/{note.sectionId}#{note.blockAnchor}">
+							<a href="/read/{note.sectionId}{bookSuffix}#{note.blockAnchor}">
 								{note.sectionNumber ? `§${note.sectionNumber} ` : ''}{note.sectionTitle}
 							</a>
 							<span class="notebook-date">{new Date(note.createdAt).toLocaleDateString()}</span>

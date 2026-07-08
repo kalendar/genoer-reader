@@ -36,6 +36,7 @@
 	import { parseCitations } from '$lib/chat/citations';
 	import { consumeSeededContext, seedQuestionText, type SeededContext } from '$lib/stores/chat-seed';
 	import { engineState } from '$lib/stores/engine-state.svelte';
+	import { withBookParam } from '$lib/utils/book-link';
 	import ModelSettingsPanel from './ModelSettings.svelte';
 	import GroundingPanel from './GroundingPanel.svelte';
 
@@ -347,7 +348,7 @@
 							{#each segmentsFor(turn.content, turn.passages) as seg}
 								{#if seg.type === 'text'}{seg.text}{:else}<a
 										class="citation"
-										href={seg.href}
+										href={withBookParam(seg.href)}
 										title="Passage {seg.index} — open in reader">[{seg.index}]</a
 									>{/if}
 							{/each}
@@ -371,7 +372,7 @@
 				<div class="turn assistant">
 					<div class="bubble">
 						{#each segmentsFor(streaming, streamingPassages) as seg}
-							{#if seg.type === 'text'}{seg.text}{:else}<a class="citation" href={seg.href}
+							{#if seg.type === 'text'}{seg.text}{:else}<a class="citation" href={withBookParam(seg.href)}
 									>[{seg.index}]</a
 								>{/if}
 						{/each}<span class="cursor">▍</span>

@@ -14,11 +14,14 @@
 	import BlockNoteCard from '$lib/components/BlockNoteCard.svelte';
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 	import { prefersReducedMotion } from '$lib/utils/motion';
+	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let media = $derived(mediaBase(data.slug));
+	let bookSuffix = $derived(bookQuerySuffix());
+	let bookAmp = $derived(bookAmpParam());
 
 	// Concepts this section defines (SPEC.md §4) — [] when the book has no graph, which both
 	// PrerequisitePanel's caller-side guard and Block's highlighter treat as "nothing to do".
@@ -197,11 +200,11 @@
 			</section>
 		{/if}
 		{#if glossaryConcepts.length > 0}
-			<a class="section-map-link" href="/map?concept={glossaryConcepts.map((c) => encodeURIComponent(c.id)).join(',')}&view=neighborhood">
+			<a class="section-map-link" href="/map?concept={glossaryConcepts.map((c) => encodeURIComponent(c.id)).join(',')}&view=neighborhood{bookAmp}">
 				View this section's concepts in the map &rarr;
 			</a>
 		{/if}
-		<a class="section-map-link" href="/practice/{data.section.id}">
+		<a class="section-map-link" href="/practice/{data.section.id}{bookSuffix}">
 			Practice this section &rarr;
 		</a>
 		<JsonViewer

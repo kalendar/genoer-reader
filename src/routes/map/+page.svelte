@@ -37,6 +37,11 @@
 	// (and unused, via the `browser` guard) at prerender time. The effect below keeps the URL in
 	// sync with state from then on via shallow routing (`replaceState`), which does not re-run `load`.
 	const initialParams = browser ? new URLSearchParams(window.location.search) : new URLSearchParams();
+	// Preserved verbatim through every shallow-routed URL rewrite below (SPEC.md §8) — the effect
+	// that follows rebuilds the whole query string from view/concept/chapter/etc. state, and without
+	// this it would silently strip `?book=` the instant the reader touches the map (selects a node,
+	// switches views, ...), losing which book is open on this route.
+	const bookParam = initialParams.get('book');
 	const initialView = initialParams.get('view');
 	const initialConcepts = (initialParams.get('concept') ?? '')
 		.split(',')
@@ -76,6 +81,7 @@
 		if (view === 'chapter' && chapterNum != null) sp.set('chapter', String(chapterNum));
 		if (view === 'prerequisite' && centerConceptIds.length > 0) sp.set('mode', prereqMode);
 		if (selectedNodeId) sp.set('node', selectedNodeId);
+		if (bookParam) sp.set('book', bookParam);
 		replaceState(`?${sp.toString()}`, {});
 	});
 

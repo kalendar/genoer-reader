@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { GraphIndex } from '$lib/data/graph';
 	import { relatedConcepts, sectionsForConcept } from '$lib/data/graph';
+	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
+
+	let bookSuffix = $derived(bookQuerySuffix());
+	let bookAmp = $derived(bookAmpParam());
 
 	let {
 		graph,
@@ -73,7 +77,7 @@
 
 		{#if definedSection && definedSection.module !== currentSectionId}
 			<p class="concept-card-row">
-				Defined in <a href="/read/{definedSection.module}">
+				Defined in <a href="/read/{definedSection.module}{bookSuffix}">
 					{definedSection.number ? `${definedSection.number} ` : ''}{definedSection.title}
 				</a>
 			</p>
@@ -105,10 +109,10 @@
 			</p>
 		{/if}
 
-		<a class="concept-card-map-link" href="/map?concept={encodeURIComponent(concept.id)}&view=neighborhood">
+		<a class="concept-card-map-link" href="/map?concept={encodeURIComponent(concept.id)}&view=neighborhood{bookAmp}">
 			View in concept map &rarr;
 		</a>
-		<a class="concept-card-map-link" href="/pathways?concept={encodeURIComponent(concept.id)}">
+		<a class="concept-card-map-link" href="/pathways?concept={encodeURIComponent(concept.id)}{bookAmp}">
 			Path to this concept &rarr;
 		</a>
 	</div>
