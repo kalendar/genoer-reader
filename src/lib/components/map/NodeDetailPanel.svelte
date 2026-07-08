@@ -141,6 +141,9 @@
 			<a class="detail-panel-map-link" href="/map?concept={encodeURIComponent(node.id)}&view=neighborhood">
 				Center neighborhood view here
 			</a>
+			<a class="detail-panel-map-link" href="/pathways?concept={encodeURIComponent(node.id)}">
+				Path to this concept &rarr;
+			</a>
 		{/if}
 	</div>
 {/if}
@@ -254,7 +257,7 @@
 	}
 
 	.detail-panel-map-link {
-		display: inline-block;
+		display: block;
 		margin-top: var(--space-2);
 		font-weight: 600;
 		font-size: 0.85rem;

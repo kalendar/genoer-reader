@@ -108,5 +108,8 @@
 		<a class="concept-card-map-link" href="/map?concept={encodeURIComponent(concept.id)}&view=neighborhood">
 			View in concept map &rarr;
 		</a>
+		<a class="concept-card-map-link" href="/pathways?concept={encodeURIComponent(concept.id)}">
+			Path to this concept &rarr;
+		</a>
 	</div>
 {/if}
