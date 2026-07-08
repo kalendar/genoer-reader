@@ -25,6 +25,22 @@
 	--space-2: 1rem;
 	--space-3: 1.5rem;
 	--space-4: 2.5rem;
+
+	/* Concept map — node kinds (shape carries kind too; color is secondary encoding). */
+	--map-node-concept: var(--color-accent);
+	--map-node-entity: #eb6834;
+	--map-node-section: var(--color-text-muted);
+
+	/* Concept map — edge types. Categorical slots from the validated dataviz palette, assigned in
+	 * fixed order and never reused for anything else; structural edges stay on the app's own
+	 * neutral border color since they're deliberately backgrounded relative to semantic edges. */
+	--map-edge-depends-on: #2a78d6;
+	--map-edge-is-a: #1baf7a;
+	--map-edge-related-to: #eda100;
+	--map-edge-part-of: #008300;
+	--map-edge-contrasts-with: #4a3aa7;
+	--map-edge-illustrates: #e34948;
+	--map-edge-structural: var(--color-border);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +54,15 @@
 		--color-accent-contrast: #17161a;
 		--color-link: #e0a479;
 		--color-highlight: #4a3f1f;
+
+		--map-node-entity: #d95926;
+
+		--map-edge-depends-on: #3987e5;
+		--map-edge-is-a: #199e70;
+		--map-edge-related-to: #c98500;
+		--map-edge-part-of: #008300;
+		--map-edge-contrasts-with: #9085e9;
+		--map-edge-illustrates: #e66767;
 	}
 }
 
@@ -94,6 +119,49 @@ button {
 
 .skip-link:focus {
 	left: 0;
+}
+
+/* App-wide top navigation */
+.app-nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	padding: 0.6rem var(--space-2);
+	border-bottom: 1px solid var(--color-border);
+	font-family: var(--font-ui);
+}
+
+.app-nav-brand {
+	font-weight: 700;
+	text-decoration: none;
+	color: var(--color-text);
+	font-size: 0.95rem;
+}
+
+.app-nav nav {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.app-nav nav a {
+	text-decoration: none;
+	color: var(--color-text-muted);
+	font-size: 0.9rem;
+	padding: 0.2rem 0.1rem;
+	border-bottom: 2px solid transparent;
+}
+
+.app-nav nav a:hover,
+.app-nav nav a:focus-visible {
+	color: var(--color-text);
+}
+
+.app-nav nav a[aria-current='page'] {
+	color: var(--color-accent);
+	border-bottom-color: var(--color-accent);
+	font-weight: 600;
 }
 
 /* Landing page */
@@ -319,6 +387,14 @@ main#main-content {
 	padding-left: 1.2rem;
 }
 
+.section-map-link {
+	display: inline-block;
+	margin-top: var(--space-1);
+	font-family: var(--font-ui);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
 /* Blocks */
 .block-trail {
 	font-family: var(--font-ui);
@@ -486,6 +562,193 @@ main#main-content {
 
 .copy-attribution:hover {
 	border-color: var(--color-accent);
+}
+
+/* Glossary term highlighting (SPEC.md §4 "Concept awareness") */
+.block mark.concept-term {
+	background: none;
+	color: inherit;
+	border-bottom: 2px dotted var(--color-accent);
+	cursor: pointer;
+	padding: 0;
+}
+
+.block mark.concept-term:hover,
+.block mark.concept-term:focus-visible {
+	background: var(--color-highlight);
+	outline: none;
+	border-radius: 0.15rem;
+}
+
+/* "Before you read" prerequisite panel */
+.prereq-panel {
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-radius: 0.4rem;
+	padding: var(--space-2) var(--space-3);
+	margin: 0 0 var(--space-3);
+	font-family: var(--font-ui);
+	font-size: 0.9rem;
+}
+
+.prereq-panel summary {
+	cursor: pointer;
+	font-weight: 600;
+	display: flex;
+	align-items: baseline;
+	gap: 0.6rem;
+	list-style: revert;
+}
+
+.prereq-count {
+	font-weight: 400;
+	font-size: 0.8rem;
+	color: var(--color-text-muted);
+}
+
+.prereq-intro {
+	color: var(--color-text-muted);
+	margin: var(--space-1) 0 var(--space-2);
+}
+
+.prereq-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.prereq-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	padding-bottom: var(--space-1);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.prereq-item:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.prereq-item.prereq-visited {
+	opacity: 0.6;
+}
+
+.prereq-term {
+	font-family: var(--font-reading);
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.prereq-definition {
+	color: var(--color-text);
+}
+
+.prereq-source {
+	font-size: 0.78rem;
+	color: var(--color-text-muted);
+}
+
+/* Concept card popover (glossary-term click target and map node detail share this look) */
+.concept-card {
+	position: fixed;
+	z-index: 60;
+	width: 20rem;
+	max-width: calc(100vw - 1rem);
+	max-height: 70vh;
+	overflow-y: auto;
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 25%);
+	padding: var(--space-2) var(--space-2) var(--space-2);
+	font-family: var(--font-ui);
+	font-size: 0.9rem;
+}
+
+.concept-card:not(.concept-card-anchored) {
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.concept-card-close {
+	float: right;
+	background: none;
+	border: none;
+	font-size: 1.3rem;
+	line-height: 1;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	padding: 0 0.2rem;
+}
+
+.concept-card-term {
+	font-family: var(--font-reading);
+	font-weight: 700;
+	font-size: 1.1rem;
+	margin: 0 1.6rem 0.35rem 0;
+}
+
+.concept-card-definition {
+	margin: 0 0 var(--space-1);
+}
+
+.concept-card-row {
+	margin: 0 0 var(--space-1);
+	color: var(--color-text-muted);
+}
+
+.concept-card-row a {
+	color: var(--color-link);
+}
+
+.concept-card-label {
+	display: block;
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	margin-bottom: 0.3rem;
+}
+
+.concept-card-related ul {
+	list-style: none;
+	margin: 0 0 var(--space-1);
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.concept-card-related-link {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--color-link);
+	cursor: pointer;
+	font-size: 0.9rem;
+	text-decoration: underline;
+}
+
+.concept-card-edge-type {
+	color: var(--color-text-muted);
+	font-size: 0.75rem;
+	margin-left: 0.4rem;
+}
+
+.concept-card-mentions {
+	font-size: 0.8rem;
+}
+
+.concept-card-map-link {
+	display: inline-block;
+	margin-top: var(--space-1);
+	font-size: 0.85rem;
+	font-weight: 600;
 }
 
 /* Continue-reading prompt on the bare /read route */
