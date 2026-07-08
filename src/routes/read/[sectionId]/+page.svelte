@@ -1,14 +1,38 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { mediaBase } from '$lib/data/book';
+	import { conceptsBySection } from '$lib/data/graph';
 	import { savePosition } from '$lib/stores/reading-position';
+	import { getVisitedSections, markSectionVisited } from '$lib/stores/visited-sections';
 	import Block from '$lib/components/Block.svelte';
 	import SectionNav from '$lib/components/SectionNav.svelte';
+	import PrerequisitePanel from '$lib/components/PrerequisitePanel.svelte';
+	import ConceptCard from '$lib/components/ConceptCard.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let media = $derived(mediaBase(data.slug));
+
+	// Concepts this section defines (SPEC.md §4) — [] when the book has no graph, which both
+	// PrerequisitePanel's caller-side guard and Block's highlighter treat as "nothing to do".
+	let glossaryConcepts = $derived(data.graph ? conceptsBySection(data.graph, data.section.id) : []);
+
+	let visitedSections = $state<Set<string>>(new Set());
+
+	// Concept card popover state, shared across every Block in this section (event-delegated).
+	let activeConceptId: string | null = $state(null);
+	let activeAnchorRect: DOMRect | null = $state(null);
+
+	function openConceptCard(conceptId: string, target: HTMLElement) {
+		activeConceptId = conceptId;
+		activeAnchorRect = target.getBoundingClientRect();
+	}
+
+	function closeConceptCard() {
+		activeConceptId = null;
+		activeAnchorRect = null;
+	}
 
 	// A section's blocks sometimes lead with a "Learning Objectives" block that just restates
 	// section.objectives[] (already shown in the header below). Suppress the visible duplicate
@@ -39,9 +63,12 @@
 		return trail;
 	}
 
-	// Persist reading position (per book slug) whenever the visited section changes.
+	// Persist reading position (per book slug) whenever the visited section changes, and record it
+	// in the visited-sections set the prerequisite panel uses to dim already-seen concepts.
 	$effect(() => {
 		savePosition(data.slug, data.section.id);
+		visitedSections = markSectionVisited(data.slug, data.section.id);
+		closeConceptCard();
 	});
 
 	// Deep links: /read/[sectionId]#<anchor> scrolls to and briefly highlights that block. Runs
@@ -79,7 +106,16 @@
 				</ul>
 			</section>
 		{/if}
+		{#if glossaryConcepts.length > 0}
+			<a class="section-map-link" href="/map?concept={glossaryConcepts.map((c) => encodeURIComponent(c.id)).join(',')}&view=neighborhood">
+				View this section's concepts in the map &rarr;
+			</a>
+		{/if}
 	</header>
+
+	{#if data.graph}
+		<PrerequisitePanel graph={data.graph} sectionId={data.section.id} {visitedSections} />
+	{/if}
 
 	{#each data.section.blocks as block, i (block.anchor)}
 		<Block
@@ -87,8 +123,21 @@
 			mediaBase={media}
 			hidden={isRedundantObjectivesBlock(i)}
 			breadcrumb={ancestorBreadcrumb(i)}
+			{glossaryConcepts}
+			onConceptActivate={openConceptCard}
 		/>
 	{/each}
 
 	<SectionNav prev={data.prev} next={data.next} />
 </article>
+
+{#if data.graph && activeConceptId}
+	<ConceptCard
+		graph={data.graph}
+		conceptId={activeConceptId}
+		anchorRect={activeAnchorRect}
+		currentSectionId={data.section.id}
+		onClose={closeConceptCard}
+		onSelectConcept={(id) => (activeConceptId = id)}
+	/>
+{/if}

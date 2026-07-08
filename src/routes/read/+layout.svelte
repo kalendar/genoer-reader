@@ -3,14 +3,17 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import AttributionFooter from '$lib/components/AttributionFooter.svelte';
 	import { setCurrentBook } from '$lib/stores/book';
+	import { setCurrentGraph } from '$lib/stores/graph';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
-	// Publish the loaded book to the shared store so later milestones (chat, concept map, study
-	// features) can read "the current book" reactively without re-fetching or prop-drilling.
+	// Publish the loaded book (and graph, which may be null — SPEC.md §8) to the shared stores so
+	// later milestones (chat, concept map, study features) can read "the current book/graph"
+	// reactively without re-fetching or prop-drilling.
 	$effect(() => {
 		setCurrentBook(data.slug, data.book);
+		setCurrentGraph(data.slug, data.graph);
 	});
 
 	let sidebarOpen = $state(false);
