@@ -71,6 +71,18 @@ async function loadPipeline(
 	available: string[],
 	progressId?: number
 ): Promise<void> {
+	// Dispose the previous pipeline FIRST — replacing the reference without
+	// disposing leaks the old model's sessions (multi-GB); loading a second
+	// model on top of an undisposed first one fails with std::bad_alloc.
+	if (generator) {
+		try {
+			await (generator as unknown as { dispose?: () => Promise<void> }).dispose?.();
+		} catch {
+			/* disposal is best-effort — proceed to load regardless */
+		}
+		generator = null;
+		current = null;
+	}
 	generator = (await pipeline('text-generation', modelId, {
 		device: backend,
 		dtype: dtype as never,

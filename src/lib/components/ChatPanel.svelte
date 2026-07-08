@@ -380,6 +380,13 @@
 		</div>
 	{/if}
 
+	{#if turns.length > 0}
+		<div class="transcript-actions">
+			<button type="button" onclick={() => exportHistory(slug, turns)}>Export transcript</button>
+			<button type="button" onclick={clearAll}>Clear history</button>
+		</div>
+	{/if}
+
 	<div class="composer">
 		<textarea
 			bind:value={question}
@@ -404,12 +411,6 @@
 		{/if}
 	</div>
 
-	{#if turns.length > 0}
-		<div class="transcript-actions">
-			<button type="button" onclick={() => exportHistory(slug, turns)}>Export transcript</button>
-			<button type="button" onclick={clearAll}>Clear history</button>
-		</div>
-	{/if}
 </section>
 
 <style>
