@@ -1,0 +1,5 @@
+node_modules/
+vendor/
+.svelte-kit/
+build/
+.DS_Store
