@@ -53,31 +53,36 @@ const MB = 1024 * 1024;
  */
 export const MODELS: ModelEntry[] = [
 	{
-		id: 'qwen2.5-0.5b',
-		name: 'Qwen2.5 0.5B Instruct',
+		id: 'qwen3-0.6b-cpu',
+		name: 'Qwen3 0.6B (CPU)',
 		tier: 'small',
-		repo: 'onnx-community/Qwen2.5-0.5B-Instruct',
+		repo: 'onnx-community/Qwen3-0.6B-ONNX',
 		dtype: 'q4',
-		availableDtypes: ['q4', 'q4f16', 'int8', 'uint8', 'quantized', 'bnb4', 'fp16'],
-		approxBytes: Math.round(786 * MB), // model_q4.onnx = 786 MB
+		availableDtypes: ['q4', 'q4f16', 'int8', 'quantized', 'bnb4', 'fp16'],
+		approxBytes: Math.round(919 * MB), // model_q4.onnx = 919 MB
 		license: 'Apache-2.0',
 		backend: 'wasm',
-		params: '0.5B',
-		blurb: 'Runs on CPU/WASM everywhere — compatibility mode. Smallest download, simplest answers.'
+		params: '0.6B',
+		blurb: 'Runs on CPU/WASM everywhere — compatibility mode. Works without WebGPU.'
 	},
 	{
-		id: 'qwen3-1.7b',
-		name: 'Qwen3 1.7B',
+		id: 'qwen3-0.6b',
+		name: 'Qwen3 0.6B',
 		tier: 'default',
-		repo: 'onnx-community/Qwen3-1.7B-ONNX',
+		repo: 'onnx-community/Qwen3-0.6B-ONNX',
 		dtype: 'q4f16',
-		availableDtypes: ['q4f16', 'q4', 'int8', 'uint8', 'quantized', 'bnb4', 'fp16'],
-		approxBytes: Math.round(1.43 * GB), // model_q4f16.onnx = 1.43 GB
+		availableDtypes: ['q4', 'q4f16', 'int8', 'quantized', 'bnb4', 'fp16'],
+		approxBytes: Math.round(570 * MB), // model_q4f16.onnx = 570 MB
 		license: 'Apache-2.0',
 		backend: 'webgpu',
-		params: '1.7B',
-		blurb: 'The recommended default when WebGPU is available — a good speed/quality balance.'
+		params: '0.6B',
+		blurb: 'The recommended default — the model used by the official Transformers.js WebGPU demo, with the broadest fallback options if your GPU misbehaves.'
 	},
+	// NOTE: Qwen3-1.7B-ONNX was removed from the registry (2026-07-08): its only
+	// quantized variants are MONOLITHIC files ≥ 1.4 GB, and onnxruntime-web
+	// cannot create a session from them in Chrome (std::bad_alloc parsing the
+	// protobuf in the 32-bit WASM heap — reproduced on two machines). Restore a
+	// mid tier when a sharded-external-data 1.7B conversion exists.
 	{
 		id: 'qwen3-4b',
 		name: 'Qwen3 4B',

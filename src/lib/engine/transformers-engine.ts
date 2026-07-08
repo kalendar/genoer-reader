@@ -61,17 +61,37 @@ class TransformersEngine implements Engine {
 	} | null = null;
 
 	constructor() {
-		this.worker = new EngineWorker();
-		this.worker.addEventListener('message', (e: MessageEvent<WorkerResponse>) =>
+		this.worker = this.spawnWorker();
+	}
+
+	private spawnWorker(): Worker {
+		const worker = new EngineWorker();
+		worker.addEventListener('message', (e: MessageEvent<WorkerResponse>) =>
 			this.onMessage(e.data)
 		);
-		this.worker.addEventListener('error', (e) => {
+		worker.addEventListener('error', (e) => {
 			const err = new Error(e.message || 'Worker error');
 			this.loadWaiter?.reject(err);
 			this.loadWaiter = null;
 			for (const g of this.generations.values()) g.fail(err.message);
 			this.generations.clear();
 		});
+		return worker;
+	}
+
+	/**
+	 * A failed model load can leave the worker's WASM heap permanently grown and
+	 * fragmented (WASM memory never shrinks) — observed: after one failed load,
+	 * EVERY later load in the same worker dies with std::bad_alloc regardless of
+	 * model size. So a failed load tears the whole worker down and respawns it.
+	 */
+	private respawnWorker(): void {
+		try {
+			this.worker.terminate();
+		} catch {
+			/* already dead is fine */
+		}
+		this.worker = this.spawnWorker();
 	}
 
 	private send(msg: WorkerRequest): void {
@@ -109,6 +129,9 @@ class TransformersEngine implements Engine {
 				if (this.loadWaiter && this.loadWaiter.id === msg.id) {
 					this.loadWaiter.reject(new Error(msg.message));
 					this.loadWaiter = null;
+					// A failed LOAD poisons the worker's WASM heap — respawn so the
+					// next attempt starts clean (weights are still browser-cached).
+					this.respawnWorker();
 				}
 				this.generations.get(msg.id)?.fail(msg.message);
 				break;

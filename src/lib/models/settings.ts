@@ -23,7 +23,15 @@ export function loadSettings(): ModelSettings | null {
 	try {
 		const raw = localStorage.getItem(KEY);
 		if (!raw) return null;
-		return JSON.parse(raw) as ModelSettings;
+		const parsed = JSON.parse(raw) as ModelSettings;
+		// Migration: a persisted modelId that no longer exists in the registry
+		// (e.g. the removed 1.7B tier) must not silently resolve as a raw repo —
+		// discard it so the caller falls back to the current recommendation.
+		if (parsed.modelId !== 'custom' && !getModel(parsed.modelId)) {
+			localStorage.removeItem(KEY);
+			return null;
+		}
+		return parsed;
 	} catch {
 		return null;
 	}

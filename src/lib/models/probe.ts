@@ -112,7 +112,7 @@ export function recommend(s: DeviceSignals): Recommendation {
 		}
 		return {
 			tier: 'small',
-			model: byId('qwen2.5-0.5b'),
+			model: byId('qwen3-0.6b-cpu'),
 			contextLength: 4096,
 			reasons,
 			compatibilityMode: true,
@@ -148,7 +148,7 @@ export function recommend(s: DeviceSignals): Recommendation {
 		return {
 			tier: 'quality',
 			model: byId('qwen3-4b'),
-			contextLength: 8192,
+			contextLength: 4096,
 			reasons,
 			compatibilityMode: false,
 			downloadWarning
@@ -157,15 +157,15 @@ export function recommend(s: DeviceSignals): Recommendation {
 
 	if (gpuProxyGiB > 0 && gpuProxyGiB < 5) {
 		reasons.push(
-			`The 4B tier needs GPU buffers beyond this adapter's ~${gpuProxyGiB.toFixed(1)} GiB ceiling once the attention cache grows — recommending the 1.7B, which also has more compatibility fallbacks.`
+			`The 4B tier needs GPU buffers beyond this adapter's ~${gpuProxyGiB.toFixed(1)} GiB ceiling once the attention cache grows — recommending the default tier, which also has the broadest fallback options.`
 		);
 	} else {
-		reasons.push('Recommending the 1.7B default tier — the safe WebGPU balance for this device.');
+		reasons.push('Recommending the default tier — the safe WebGPU balance for this device.');
 	}
 	return {
 		tier: 'default',
-		model: byId('qwen3-1.7b'),
-		contextLength: 8192,
+		model: byId('qwen3-0.6b'),
+		contextLength: 4096,
 		reasons,
 		compatibilityMode: false,
 		downloadWarning
