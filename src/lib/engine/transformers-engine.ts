@@ -113,8 +113,22 @@ class TransformersEngine implements Engine {
 				this.generations.get(msg.id)?.fail(msg.message);
 				break;
 			}
+			case 'fallback': {
+				console.info(
+					`[engine] inference failed on ${msg.from.backend}/${msg.from.dtype}; ` +
+						`retrying on ${msg.to.backend}/${msg.to.dtype} (${msg.reason})`
+				);
+				this.onFallback?.({ from: msg.from, to: msg.to, reason: msg.reason });
+				break;
+			}
 		}
 	}
+
+	onFallback?: (info: {
+		from: { backend: Backend; dtype: string };
+		to: { backend: Backend; dtype: string };
+		reason: string;
+	}) => void;
 
 	loadModel(
 		modelId: string,

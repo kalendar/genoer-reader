@@ -66,9 +66,23 @@ export interface ErrorMessage {
 	message: string;
 }
 
+/**
+ * Emitted when a generation failed on the current (backend, dtype) config and
+ * the worker transparently reloaded the model on a safer one and retried
+ * (SPEC §5 graceful degradation). `id` is the generate request that triggered it.
+ */
+export interface FallbackMessage {
+	type: 'fallback';
+	id: number;
+	from: { backend: Backend; dtype: string };
+	to: { backend: Backend; dtype: string };
+	reason: string;
+}
+
 export type WorkerResponse =
 	| LoadProgressMessage
 	| ReadyMessage
 	| ChunkMessage
 	| DoneMessage
-	| ErrorMessage;
+	| ErrorMessage
+	| FallbackMessage;

@@ -94,6 +94,16 @@ export interface Engine {
 	countTokens(text: string): number;
 	/** Tear down the worker and free the model. */
 	dispose(): void;
+	/**
+	 * Fired when a failed generation was transparently retried on a safer
+	 * (backend, dtype) config (SPEC §5 graceful degradation). UI should update
+	 * its backend indicator and may surface a "compatibility mode" notice.
+	 */
+	onFallback?: (info: {
+		from: { backend: Backend; dtype: string };
+		to: { backend: Backend; dtype: string };
+		reason: string;
+	}) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
