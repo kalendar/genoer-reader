@@ -16,8 +16,6 @@ export interface LoadRequest {
 	modelId: string;
 	dtype?: string;
 	device?: Backend | 'auto';
-	/** Weight variants that exist in this repo — constrains the fallback ladder. */
-	availableDtypes?: string[];
 }
 
 export interface GenerateRequest {
@@ -68,23 +66,13 @@ export interface ErrorMessage {
 	message: string;
 }
 
-/**
- * Emitted when a generation failed on the current (backend, dtype) config and
- * the worker transparently reloaded the model on a safer one and retried
- * (SPEC §5 graceful degradation). `id` is the generate request that triggered it.
- */
-export interface FallbackMessage {
-	type: 'fallback';
-	id: number;
-	from: { backend: Backend; dtype: string };
-	to: { backend: Backend; dtype: string };
-	reason: string;
-}
+// NOTE: recovery/fallback is orchestrated by transformers-engine.ts on the
+// main thread (fresh worker per rung) — the worker itself never retries, so
+// there is no fallback message in this protocol.
 
 export type WorkerResponse =
 	| LoadProgressMessage
 	| ReadyMessage
 	| ChunkMessage
 	| DoneMessage
-	| ErrorMessage
-	| FallbackMessage;
+	| ErrorMessage;
