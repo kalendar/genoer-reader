@@ -29,10 +29,12 @@ function post(msg: WorkerResponse): void {
 }
 
 /** Sensible default weight variant per backend when the caller doesn't pin one. */
-function defaultDtype(backend: Backend, f16: boolean): string {
-	// q4f16 needs fp16 shaders — actually CHECK for them (shader-f16), don't
-	// assume every WebGPU adapter has them. On WASM (or fp16-less GPUs): plain q4.
-	return backend === 'webgpu' && f16 ? 'q4f16' : 'q4';
+function defaultDtype(_backend: Backend, _f16: boolean): string {
+	// Always q4 (fp32 compute): even on adapters that advertise shader-f16, the
+	// fp16 WebGPU execution path in current onnxruntime-web crashes at inference
+	// (SafeInt overflow in OrtRun) — field-confirmed on Chrome/macOS 2026-07-08.
+	// Revisit q4f16 as the WebGPU default when a fixed runtime ships.
+	return 'q4';
 }
 
 /** Probe WebGPU the same way the capability probe does, but from inside the worker. */

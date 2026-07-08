@@ -70,13 +70,17 @@ export const MODELS: ModelEntry[] = [
 		name: 'Qwen3 0.6B',
 		tier: 'default',
 		repo: 'onnx-community/Qwen3-0.6B-ONNX',
-		dtype: 'q4f16',
+		// q4 (fp32 compute), NOT q4f16: the fp16 WebGPU execution path in the
+		// currently-shipped onnxruntime-web crashes at inference (SafeInt integer
+		// overflow in OrtRun) — field-confirmed on Chrome/macOS, 2026-07-08.
+		// Same file serves the CPU tier, so one download covers both backends.
+		dtype: 'q4',
 		availableDtypes: ['q4', 'q4f16', 'int8', 'quantized', 'bnb4', 'fp16'],
-		approxBytes: Math.round(570 * MB), // model_q4f16.onnx = 570 MB
+		approxBytes: Math.round(919 * MB), // model_q4.onnx = 919 MB
 		license: 'Apache-2.0',
 		backend: 'webgpu',
 		params: '0.6B',
-		blurb: 'The recommended default — the model used by the official Transformers.js WebGPU demo, with the broadest fallback options if your GPU misbehaves.'
+		blurb: 'The recommended default — stable fp32 GPU compute, and the same weights power the CPU fallback, so one download covers both.'
 	},
 	// NOTE: Qwen3-1.7B-ONNX was removed from the registry (2026-07-08): its only
 	// quantized variants are MONOLITHIC files ≥ 1.4 GB, and onnxruntime-web
@@ -94,7 +98,7 @@ export const MODELS: ModelEntry[] = [
 		license: 'Apache-2.0',
 		backend: 'webgpu',
 		params: '4B',
-		blurb: 'Best answer quality — needs a GPU with buffer limits above 4 GiB; can hit memory ceilings on common adapters, and has no quantized fallback variant.'
+		blurb: 'Best answer quality — experimental: ships only fp16-compute variants, which currently crash on some Chrome/GPU combinations, and it has no q4 fallback. Needs GPU buffer limits above 4 GiB.'
 	}
 ];
 
