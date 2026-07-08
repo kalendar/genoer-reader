@@ -19,7 +19,18 @@ export default defineConfig({
 				fallback: undefined,
 				precompress: false,
 				strict: true
-			})
+			}),
+
+			// SPEC.md §8: "Missing media ⇒ figures show alt text ... chat is unaffected."
+			// The reference book ships without its (gitignored) media, so figure <img>
+			// links 404 at prerender time. Degrade those to alt text instead of failing
+			// the static build; every other broken link still hard-errors.
+			prerender: {
+				handleHttpError: ({ path, referrer, message }) => {
+					if (path.startsWith('/books/') && path.includes('/media/')) return;
+					throw new Error(`${message}${referrer ? ` (linked from ${referrer})` : ''}`);
+				}
+			}
 		})
 	]
 });
