@@ -14,7 +14,14 @@
 	 */
 	import { onMount } from 'svelte';
 	import type { Engine, Backend, ChatStream } from '$lib/engine';
-	import { buildGroundedPrompt, type Graph, type Passage, type RetrievalBook } from '$lib/retrieval';
+	import {
+		buildGroundedPrompt,
+		buildSeededGroundedPrompt,
+		type Graph,
+		type GroundedPrompt,
+		type Passage,
+		type RetrievalBook
+	} from '$lib/retrieval';
 	import { recommendForDevice, type DeviceSignals, type Recommendation } from '$lib/models/probe';
 	import { loadSettings, saveSettings, resolveModel, type ModelSettings } from '$lib/models/settings';
 	import {
@@ -28,6 +35,7 @@
 	import { getPosition } from '$lib/stores/reading-position';
 	import { composeMessages } from '$lib/chat/messages';
 	import { parseCitations } from '$lib/chat/citations';
+	import { consumeSeededContext, seedQuestionText, type SeededContext } from '$lib/stores/chat-seed';
 	import ModelSettingsPanel from './ModelSettings.svelte';
 	import GroundingPanel from './GroundingPanel.svelte';
 
@@ -58,6 +66,11 @@
 	let showSettings = $state(true);
 	let fallbackNotice = $state<string | null>(null);
 
+	// Seeded context from the reader's selection toolbar (SPEC.md §7 "Explain-selected-text") — set
+	// once on mount if the user arrived here via Explain/Simplify/Give me an example. Grounds the
+	// *next* sent question directly on the enclosing block rather than running retrieval.
+	let seed = $state<SeededContext | null>(null);
+
 	// Engine + active stream are imperative handles, not reactive UI state.
 	let engine: Engine | null = null;
 	let activeStream: ChatStream | null = null;
@@ -77,6 +90,11 @@
 
 	onMount(() => {
 		turns = loadHistory(slug);
+		const pendingSeed = consumeSeededContext();
+		if (pendingSeed) {
+			seed = pendingSeed;
+			question = seedQuestionText(pendingSeed);
+		}
 		const persisted = loadSettings();
 		(async () => {
 			const { signals: sig, recommendation: reco } = await recommendForDevice();
@@ -150,12 +168,32 @@
 		question = '';
 		engineError = null;
 
-		const currentSectionId = getPosition(slug)?.sectionId ?? null;
-		const gp = buildGroundedPrompt(q, book, graph, {
-			currentSectionId,
-			budgetTokens,
-			bookTitle: book.title
-		});
+		// A seeded turn (from the reader's selection toolbar) grounds on the exact block the
+		// selection came from instead of running graph retrieval — used once, then cleared so later
+		// turns in the same conversation go back to normal retrieval.
+		let gp: GroundedPrompt;
+		if (seed) {
+			const passage: Passage = {
+				index: 1,
+				anchor: seed.blockAnchor,
+				sectionId: seed.sectionId,
+				sectionTitle: seed.sectionTitle,
+				sectionNumber: seed.sectionNumber,
+				heading: seed.trail[seed.trail.length - 1] ?? null,
+				text: seed.blockText,
+				tokens: approxTokens(seed.blockText),
+				isDefinition: false
+			};
+			gp = buildSeededGroundedPrompt(q, passage, book.title);
+			seed = null;
+		} else {
+			const currentSectionId = getPosition(slug)?.sectionId ?? null;
+			gp = buildGroundedPrompt(q, book, graph, {
+				currentSectionId,
+				budgetTokens,
+				bookTitle: book.title
+			});
+		}
 
 		const userTurn: ChatTurn = { id: newId(), role: 'user', content: q, createdAt: Date.now() };
 		const priorHistory = turns; // context = everything before this question
@@ -348,6 +386,17 @@
 		{/if}
 	</div>
 
+	{#if seed}
+		<div class="seed-banner">
+			<span>
+				Grounded on your selection from
+				<strong>{seed.sectionNumber ? `§${seed.sectionNumber} ` : ''}{seed.sectionTitle}</strong>:
+				&ldquo;{seed.selectionText.length > 120 ? seed.selectionText.slice(0, 120) + '…' : seed.selectionText}&rdquo;
+			</span>
+			<button type="button" onclick={() => (seed = null)}>Use normal retrieval instead</button>
+		</div>
+	{/if}
+
 	<div class="composer">
 		<textarea
 			bind:value={question}
@@ -527,6 +576,36 @@
 		font-size: 0.72rem;
 		color: var(--color-text-muted);
 		margin-top: 0.2rem;
+	}
+
+	.seed-banner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6rem;
+		font-size: 0.82rem;
+		background: var(--color-bg-raised);
+		border: 1px solid var(--color-border);
+		border-left: 3px solid var(--color-accent);
+		border-radius: 0 0.3rem 0.3rem 0;
+		padding: 0.5rem 0.7rem;
+		margin-top: var(--space-1);
+		color: var(--color-text);
+	}
+	.seed-banner button {
+		flex: 0 0 auto;
+		background: none;
+		border: 1px solid var(--color-border);
+		border-radius: 0.3rem;
+		padding: 0.25rem 0.5rem;
+		cursor: pointer;
+		color: var(--color-text-muted);
+		font-size: 0.75rem;
+	}
+	.seed-banner button:hover {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
 	}
 
 	.composer {

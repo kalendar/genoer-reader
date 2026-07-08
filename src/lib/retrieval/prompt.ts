@@ -46,6 +46,30 @@ function userPrompt(passages: Passage[], question: string): string {
 }
 
 /**
+ * Build a grounded prompt from a single, already-known passage rather than
+ * running retrieval (SPEC.md §7 "Explain-selected-text"). The reader's
+ * selection toolbar already knows exactly which block a selection came
+ * from — there's nothing to retrieve. Reuses the same system/user prompt
+ * rendering as `buildGroundedPrompt` so seeded turns look identical to
+ * retrieved ones (citations, the "Grounded on passages" panel, etc.).
+ */
+export function buildSeededGroundedPrompt(
+	question: string,
+	passage: Passage,
+	bookTitle?: string
+): GroundedPrompt {
+	return {
+		system: systemPrompt(bookTitle),
+		user: userPrompt([passage], question),
+		passages: [passage],
+		matchedConcepts: [],
+		rankedSections: [],
+		usedFallback: false,
+		usedTokens: passage.tokens
+	};
+}
+
+/**
  * Build a fully grounded prompt for a question (SPEC §5 grounding pipeline).
  * Pass `graph = null` for books without a graph.json — retrieval degrades to
  * current-section grounding automatically.

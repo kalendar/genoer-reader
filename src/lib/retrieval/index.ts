@@ -3,7 +3,7 @@
  * The chat feature calls `buildGroundedPrompt`; the rest is exported for tests
  * and for the "Grounded on these passages" transparency panel.
  */
-export { buildGroundedPrompt } from './prompt';
+export { buildGroundedPrompt, buildSeededGroundedPrompt } from './prompt';
 export { buildGraphIndex, matchConcepts, type GraphIndex } from './graph';
 export { rankSections, selectBlocks, selectFallbackBlocks } from './rank';
 export { normalizeText, stemToken, tokenize } from './normalize';
