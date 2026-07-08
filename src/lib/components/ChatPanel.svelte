@@ -13,7 +13,7 @@
 	 * light and honoring "nothing downloads without a click".
 	 */
 	import { onMount } from 'svelte';
-	import type { Engine, Backend, ChatStream } from '$lib/engine';
+	import type { ChatStream } from '$lib/engine';
 	import {
 		buildGroundedPrompt,
 		buildSeededGroundedPrompt,
@@ -22,8 +22,7 @@
 		type Passage,
 		type RetrievalBook
 	} from '$lib/retrieval';
-	import { recommendForDevice, type DeviceSignals, type Recommendation } from '$lib/models/probe';
-	import { loadSettings, saveSettings, resolveModel, type ModelSettings } from '$lib/models/settings';
+	import { MODELS } from '$lib/models/registry';
 	import {
 		loadHistory,
 		saveHistory,
@@ -36,6 +35,7 @@
 	import { composeMessages } from '$lib/chat/messages';
 	import { parseCitations } from '$lib/chat/citations';
 	import { consumeSeededContext, seedQuestionText, type SeededContext } from '$lib/stores/chat-seed';
+	import { engineState } from '$lib/stores/engine-state.svelte';
 	import ModelSettingsPanel from './ModelSettings.svelte';
 	import GroundingPanel from './GroundingPanel.svelte';
 
@@ -46,35 +46,35 @@
 	}: { book: RetrievalBook; graph?: Graph | null; slug: string } = $props();
 
 	// ---- reactive state -------------------------------------------------------
+	// Engine/model status (status, settings, progress, backend, ...) lives in the
+	// shared `engineState` store (`$lib/stores/engine-state.svelte`), not here —
+	// so navigating away and back (or an HMR reload) doesn't reset an already
+	// loaded model back to "download the model", and Chat/Practice never spin up
+	// a second worker.
 	let turns = $state<ChatTurn[]>([]);
 	let question = $state('');
-	let settings = $state<ModelSettings>({ modelId: 'qwen3-1.7b', contextLength: 8192, device: 'auto' });
-	let signals = $state<DeviceSignals | null>(null);
-	let recommendation = $state<Recommendation | null>(null);
-
-	let status = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
-	let progress = $state(0);
-	let progressLabel = $state('');
-	let backend = $state<Backend | null>(null);
-	let loadedModelId = $state<string | null>(null);
-	let engineError = $state<string | null>(null);
 
 	let generating = $state(false);
 	let streaming = $state('');
 	let streamingPassages = $state<Passage[]>([]);
 	let speedWarning = $state(false);
-	let showSettings = $state(true);
-	let fallbackNotice = $state<string | null>(null);
+	// Start collapsed if a model is already loaded (e.g. loaded from this panel
+	// or from Practice earlier in the session) — don't re-prompt for something
+	// that's already ready.
+	let showSettings = $state(engineState.status !== 'ready');
 
 	// Seeded context from the reader's selection toolbar (SPEC.md §7 "Explain-selected-text") — set
 	// once on mount if the user arrived here via Explain/Simplify/Give me an example. Grounds the
 	// *next* sent question directly on the enclosing block rather than running retrieval.
 	let seed = $state<SeededContext | null>(null);
 
-	// Engine + active stream are imperative handles, not reactive UI state.
-	let engine: Engine | null = null;
+	// The active stream is an imperative handle, not reactive UI state.
 	let activeStream: ChatStream | null = null;
 	let scroller: HTMLDivElement | null = null;
+
+	const loadedModelName = $derived(
+		MODELS.find((m) => m.id === engineState.loadedModelId)?.name ?? engineState.loadedModelId ?? ''
+	);
 
 	const GEN_HEADROOM = 512;
 	const SYSTEM_RESERVE = 300;
@@ -85,7 +85,10 @@
 
 	const budgetTokens = $derived.by(() => {
 		const historyTokens = turns.reduce((sum, t) => sum + approxTokens(t.content), 0);
-		return Math.max(800, settings.contextLength - GEN_HEADROOM - SYSTEM_RESERVE - historyTokens);
+		return Math.max(
+			800,
+			engineState.settings.contextLength - GEN_HEADROOM - SYSTEM_RESERVE - historyTokens
+		);
 	});
 
 	onMount(() => {
@@ -95,21 +98,21 @@
 			seed = pendingSeed;
 			question = seedQuestionText(pendingSeed);
 		}
-		const persisted = loadSettings();
-		(async () => {
-			const { signals: sig, recommendation: reco } = await recommendForDevice();
-			signals = sig;
-			recommendation = reco;
-			if (persisted) {
-				settings = persisted;
-			} else {
-				settings = {
-					modelId: reco.model.id,
-					contextLength: reco.contextLength,
-					device: 'auto'
-				};
-			}
-		})();
+		void engineState.ensureProbed();
+	});
+
+	// Auto-collapse settings the moment the shared engine transitions into
+	// 'ready' while this panel is mounted (mirrors the old per-panel behavior
+	// after a successful load) — but only on that transition, so a user who
+	// reopens settings via "Change" while already ready isn't fought.
+	let prevEngineStatus = engineState.status;
+	$effect(() => {
+		const s = engineState.status;
+		if (prevEngineStatus !== 'ready' && s === 'ready') {
+			showSettings = false;
+			speedWarning = false;
+		}
+		prevEngineStatus = s;
 	});
 
 	$effect(() => {
@@ -119,54 +122,12 @@
 		if (scroller) scroller.scrollTop = scroller.scrollHeight;
 	});
 
-	function engineErrorMessage(e: unknown): string {
-		const msg = e instanceof Error ? e.message : String(e);
-		return `Could not initialise the on-device model: ${msg}. The rest of the app still works — this is the only feature that needs the model.`;
-	}
-
-	async function loadModel() {
-		status = 'loading';
-		engineError = null;
-		progress = 0;
-		progressLabel = 'Preparing…';
-		speedWarning = false;
-		try {
-			if (!engine) {
-				const { createEngine } = await import('$lib/engine');
-				engine = createEngine();
-				engine.onFallback = (f) => {
-					backend = f.to.backend;
-					fallbackNotice =
-						f.to.backend === 'wasm'
-							? 'Your GPU had trouble running this model, so it switched to CPU compatibility mode — slower, but working.'
-							: 'This model hit a GPU precision issue, so it reloaded with safer settings. Answers may be slightly slower.';
-				};
-			}
-			const resolved = resolveModel(settings);
-			const res = await engine.loadModel(
-				resolved.repo,
-				{ dtype: resolved.dtype, device: settings.device, maxContext: settings.contextLength },
-				(p) => {
-					if (typeof p.overall === 'number') progress = p.overall;
-					progressLabel = p.file ? `Downloading ${p.file}… ${Math.round(progress * 100)}%` : '';
-				}
-			);
-			backend = res.backend;
-			loadedModelId = settings.modelId;
-			status = 'ready';
-			showSettings = false;
-			saveSettings(settings);
-		} catch (e) {
-			status = 'error';
-			engineError = engineErrorMessage(e);
-		}
-	}
-
 	async function send() {
 		const q = question.trim();
-		if (!q || generating || status !== 'ready' || !engine) return;
+		const engine = engineState.getEngine();
+		if (!q || generating || engineState.status !== 'ready' || !engine) return;
 		question = '';
-		engineError = null;
+		engineState.engineError = null;
 
 		// A seeded turn (from the reader's selection toolbar) grounds on the exact block the
 		// selection came from instead of running graph retrieval — used once, then cleared so later
@@ -220,16 +181,17 @@
 				passages: gp.passages,
 				matchedTerms: gp.matchedConcepts.map((m) => m.concept.term),
 				usedFallback: gp.usedFallback,
-				backend: backend ?? undefined,
+				backend: engineState.backend ?? undefined,
 				tokensPerSecond: tps,
 				createdAt: Date.now()
 			};
 			turns = [...turns, assistantTurn];
 			saveHistory(slug, turns);
+			if (tps > 0) engineState.recordTokensPerSecond(tps);
 			// SPEC §5 verification: warn (not force) if throughput is below a usability floor.
 			if (tps > 0 && tps < 3) speedWarning = true;
 		} catch (e) {
-			engineError = e instanceof Error ? e.message : String(e);
+			engineState.engineError = e instanceof Error ? e.message : String(e);
 			// Keep any partial text as the assistant turn so the transcript stays coherent.
 			if (streaming) {
 				turns = [
@@ -282,108 +244,129 @@
 				Answers are machine-generated by an on-device model. The cited passages are the
 				authority — follow a citation to read the source. Nothing you type leaves your browser.
 			</p>
-			{#if fallbackNotice}
-				<p class="machine-notice fallback-notice" role="status">{fallbackNotice}</p>
+			{#if engineState.fallbackNotice}
+				<p class="machine-notice fallback-notice" role="status">{engineState.fallbackNotice}</p>
 			{/if}
 		</div>
-		<button
-			type="button"
-			class="settings-toggle"
-			aria-expanded={showSettings}
-			onclick={() => (showSettings = !showSettings)}
-		>
-			{showSettings ? 'Hide' : 'Model'} settings
-		</button>
+		{#if engineState.status === 'ready' && showSettings}
+			<button
+				type="button"
+				class="settings-toggle"
+				aria-expanded={showSettings}
+				onclick={() => (showSettings = false)}
+			>
+				Hide settings
+			</button>
+		{/if}
 	</header>
 
-	{#if showSettings || status !== 'ready'}
-		<div class="settings-wrap">
-			<ModelSettingsPanel
-				bind:settings
-				{signals}
-				{recommendation}
-				{status}
-				{progress}
-				{progressLabel}
-				{backend}
-				{loadedModelId}
-				onLoad={loadModel}
-			/>
+	{#if engineState.status === 'ready' && !showSettings}
+		<!-- Collapsed one-line summary — keeps the transcript/composer on-screen once a model is
+		     loaded instead of the full settings panel pushing them below the fold. -->
+		<div class="model-bar">
+			<span class="model-bar-item"><strong>{loadedModelName}</strong></span>
+			<span class="model-bar-sep">·</span>
+			<span class="model-bar-item">{engineState.backend === 'webgpu' ? 'WebGPU' : 'CPU/WASM'}</span>
+			{#if engineState.lastTokensPerSecond}
+				<span class="model-bar-sep">·</span>
+				<span class="model-bar-item">{engineState.lastTokensPerSecond.toFixed(1)} tok/s</span>
+			{/if}
+			<button type="button" class="model-bar-change" onclick={() => (showSettings = true)}>
+				Change
+			</button>
 		</div>
 	{/if}
 
-	{#if !graph}
-		<p class="degrade-note">
-			This book has no knowledge graph — answers are grounded on the section you're currently
-			reading rather than graph-retrieved passages.
-		</p>
-	{/if}
-
-	{#if engineError}
-		<p class="error-note">{engineError}</p>
-	{/if}
-	{#if speedWarning}
-		<p class="degrade-note">
-			Generation is slow on this device. You can step down to a smaller model in settings for
-			faster (if simpler) answers.
-		</p>
-	{/if}
-
-	<div class="transcript" bind:this={scroller}>
-		{#if turns.length === 0 && !generating}
-			<div class="empty">
-				<p>
-					Ask a question about <strong>{book.title ?? 'this book'}</strong>. The answer is
-					retrieved from the book's own passages
-					{#if graph}via its knowledge graph{/if} and every claim links back to where it's
-					covered.
-				</p>
-				{#if status !== 'ready'}
-					<p class="empty-hint">Load a model above to begin.</p>
-				{/if}
+	<div class="chat-scroller" bind:this={scroller}>
+		{#if showSettings || engineState.status !== 'ready'}
+			<div class="settings-wrap">
+				<ModelSettingsPanel
+					bind:settings={engineState.settings}
+					signals={engineState.signals}
+					recommendation={engineState.recommendation}
+					status={engineState.status}
+					progress={engineState.progress}
+					progressLabel={engineState.progressLabel}
+					backend={engineState.backend}
+					loadedModelId={engineState.loadedModelId}
+					onLoad={() => engineState.loadModel()}
+				/>
 			</div>
 		{/if}
 
-		{#each turns as turn (turn.id)}
-			{#if turn.role === 'user'}
-				<div class="turn user"><div class="bubble">{turn.content}</div></div>
-			{:else}
-				<div class="turn assistant">
-					<div class="bubble">
-						{#each segmentsFor(turn.content, turn.passages) as seg}
-							{#if seg.type === 'text'}{seg.text}{:else}<a
-									class="citation"
-									href={seg.href}
-									title="Passage {seg.index} — open in reader">[{seg.index}]</a
-								>{/if}
-						{/each}
-					</div>
-					<GroundingPanel
-						passages={turn.passages ?? []}
-						matchedTerms={turn.matchedTerms ?? []}
-						usedFallback={turn.usedFallback ?? false}
-					/>
-					{#if turn.tokensPerSecond}
-						<div class="turn-meta">
-							{turn.backend === 'webgpu' ? 'WebGPU' : 'CPU/WASM'} · {turn.tokensPerSecond.toFixed(1)}
-							tok/s
-						</div>
+		{#if !graph}
+			<p class="degrade-note">
+				This book has no knowledge graph — answers are grounded on the section you're currently
+				reading rather than graph-retrieved passages.
+			</p>
+		{/if}
+
+		{#if engineState.engineError}
+			<p class="error-note">{engineState.engineError}</p>
+		{/if}
+		{#if speedWarning}
+			<p class="degrade-note">
+				Generation is slow on this device. You can step down to a smaller model in settings for
+				faster (if simpler) answers.
+			</p>
+		{/if}
+
+		<div class="transcript">
+			{#if turns.length === 0 && !generating}
+				<div class="empty">
+					<p>
+						Ask a question about <strong>{book.title ?? 'this book'}</strong>. The answer is
+						retrieved from the book's own passages
+						{#if graph}via its knowledge graph{/if} and every claim links back to where it's
+						covered.
+					</p>
+					{#if engineState.status !== 'ready'}
+						<p class="empty-hint">Load a model above to begin.</p>
 					{/if}
 				</div>
 			{/if}
-		{/each}
 
-		{#if generating}
-			<div class="turn assistant">
-				<div class="bubble">
-					{#each segmentsFor(streaming, streamingPassages) as seg}
-						{#if seg.type === 'text'}{seg.text}{:else}<a class="citation" href={seg.href}
-								>[{seg.index}]</a
-							>{/if}
-					{/each}<span class="cursor">▍</span>
+			{#each turns as turn (turn.id)}
+				{#if turn.role === 'user'}
+					<div class="turn user"><div class="bubble">{turn.content}</div></div>
+				{:else}
+					<div class="turn assistant">
+						<div class="bubble">
+							{#each segmentsFor(turn.content, turn.passages) as seg}
+								{#if seg.type === 'text'}{seg.text}{:else}<a
+										class="citation"
+										href={seg.href}
+										title="Passage {seg.index} — open in reader">[{seg.index}]</a
+									>{/if}
+							{/each}
+						</div>
+						<GroundingPanel
+							passages={turn.passages ?? []}
+							matchedTerms={turn.matchedTerms ?? []}
+							usedFallback={turn.usedFallback ?? false}
+						/>
+						{#if turn.tokensPerSecond}
+							<div class="turn-meta">
+								{turn.backend === 'webgpu' ? 'WebGPU' : 'CPU/WASM'} · {turn.tokensPerSecond.toFixed(1)}
+								tok/s
+							</div>
+						{/if}
+					</div>
+				{/if}
+			{/each}
+
+			{#if generating}
+				<div class="turn assistant">
+					<div class="bubble">
+						{#each segmentsFor(streaming, streamingPassages) as seg}
+							{#if seg.type === 'text'}{seg.text}{:else}<a class="citation" href={seg.href}
+									>[{seg.index}]</a
+								>{/if}
+						{/each}<span class="cursor">▍</span>
+					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 
 	{#if seed}
@@ -401,16 +384,21 @@
 		<textarea
 			bind:value={question}
 			onkeydown={onKeydown}
-			placeholder={status === 'ready'
+			placeholder={engineState.status === 'ready'
 				? 'Ask a question about this book…'
-				: 'Load a model to start chatting…'}
+				: 'Load a model above to start chatting…'}
 			rows="2"
-			disabled={status !== 'ready' || generating}
+			disabled={engineState.status !== 'ready' || generating}
 		></textarea>
 		{#if generating}
 			<button type="button" class="send stop" onclick={stop}>Stop</button>
 		{:else}
-			<button type="button" class="send" onclick={send} disabled={status !== 'ready' || !question.trim()}>
+			<button
+				type="button"
+				class="send"
+				onclick={send}
+				disabled={engineState.status !== 'ready' || !question.trim()}
+			>
 				Send
 			</button>
 		{/if}
@@ -432,10 +420,19 @@
 		font-family: var(--font-ui);
 		display: flex;
 		flex-direction: column;
-		min-height: 100vh;
+		/* Fill exactly the viewport height left after the app nav header (its real
+		   rendered height — including when it wraps on narrow screens — is
+		   published as --app-nav-h by the root layout) so the composer never sits
+		   below the fold and the page itself never scrolls; only .chat-scroller
+		   below does. `dvh` (with a `vh` fallback for older engines) accounts for
+		   mobile browser chrome that resizes the viewport. */
+		height: calc(100vh - var(--app-nav-h, 3.5rem));
+		height: calc(100dvh - var(--app-nav-h, 3.5rem));
+		overflow: hidden;
 	}
 
 	.chat-header {
+		flex: 0 0 auto;
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
@@ -471,8 +468,45 @@
 		font-size: 0.85rem;
 	}
 
+	/* Collapsed "model ready" summary bar (replaces the full settings panel once
+	   a model is loaded, per the chat-composer-below-the-fold fix). */
+	.model-bar {
+		flex: 0 0 auto;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.82rem;
+		color: var(--color-text-muted);
+		background: var(--color-bg-raised);
+		border: 1px solid var(--color-border);
+		border-radius: 0.3rem;
+		padding: 0.4rem 0.7rem;
+		margin-top: 0.5rem;
+	}
+	.model-bar-item strong {
+		color: var(--color-text);
+	}
+	.model-bar-sep {
+		opacity: 0.6;
+	}
+	.model-bar-change {
+		margin-left: auto;
+		background: none;
+		border: 1px solid var(--color-border);
+		border-radius: 0.3rem;
+		padding: 0.2rem 0.6rem;
+		cursor: pointer;
+		color: var(--color-text-muted);
+		font-size: 0.78rem;
+	}
+	.model-bar-change:hover {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
 	.settings-wrap {
-		margin: var(--space-2) 0;
+		margin: 0 0 var(--space-2);
 		padding: var(--space-2);
 		background: var(--color-bg-raised);
 		border: 1px solid var(--color-border);
@@ -504,14 +538,22 @@
 		}
 	}
 
-	.transcript {
+	/* The one scrollable region between the pinned header and the pinned
+	   composer — settings (when open), degrade/error notes, and the transcript
+	   all live inside it and scroll together, so the composer below is always
+	   on-screen regardless of how tall the settings panel or the transcript
+	   get. */
+	.chat-scroller {
 		flex: 1 1 auto;
+		min-height: 0;
 		overflow-y: auto;
+		padding: var(--space-2) 0;
+	}
+
+	.transcript {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-2);
-		padding: var(--space-2) 0;
-		min-height: 12rem;
 	}
 
 	.empty {
@@ -579,6 +621,7 @@
 	}
 
 	.seed-banner {
+		flex: 0 0 auto;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -609,6 +652,7 @@
 	}
 
 	.composer {
+		flex: 0 0 auto;
 		display: flex;
 		gap: 0.5rem;
 		align-items: flex-end;
@@ -649,6 +693,7 @@
 	}
 
 	.transcript-actions {
+		flex: 0 0 auto;
 		display: flex;
 		gap: 0.5rem;
 		margin-top: var(--space-1);
