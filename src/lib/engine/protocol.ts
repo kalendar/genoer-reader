@@ -16,6 +16,8 @@ export interface LoadRequest {
 	modelId: string;
 	dtype?: string;
 	device?: Backend | 'auto';
+	/** Weight variants that exist in this repo — constrains the fallback ladder. */
+	availableDtypes?: string[];
 }
 
 export interface GenerateRequest {

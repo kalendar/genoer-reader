@@ -106,7 +106,12 @@ class EngineState {
 			const resolved = resolveModel(this.settings);
 			const res = await engine.loadModel(
 				resolved.repo,
-				{ dtype: resolved.dtype, device: this.settings.device, maxContext: this.settings.contextLength },
+				{
+					dtype: resolved.dtype,
+					device: this.settings.device,
+					maxContext: this.settings.contextLength,
+					availableDtypes: resolved.entry?.availableDtypes
+				},
 				(p) => {
 					if (typeof p.overall === 'number') this.progress = p.overall;
 					this.progressLabel = p.file

@@ -135,13 +135,16 @@ export function recommend(s: DeviceSignals): Recommendation {
 		reasons.push(`Reported device memory ≈ ${deviceMem} GiB (browser-capped at 8).`);
 	}
 
-	// Quality tier (~4B q4f16 ≈ 2.8 GB weights + KV): want a roomy GPU limit and,
-	// where reported, ≥ 8 GiB device memory.
-	const bigGpu = gpuProxyGiB >= 2 || s.maxBufferSize === undefined && (deviceMem ?? 0) >= 8;
+	// Quality tier (~4B q4f16 ≈ 2.8 GB weights + a growing KV cache): needs GPU
+	// buffer limits comfortably ABOVE the common 4 GiB default. Observed in the
+	// wild: on a 4 GiB-capped adapter the 4B tier works for a first short
+	// question, then crashes with an onnxruntime SafeInt integer overflow once
+	// history grows the KV allocation. So the bar is deliberately high.
+	const bigGpu = gpuProxyGiB >= 5;
 	const roomyMem = (deviceMem ?? 8) >= 8; // undefined → assume the 8-cap best case
 
 	if (bigGpu && roomyMem) {
-		reasons.push('GPU limits and memory look sufficient for the 4B quality tier.');
+		reasons.push('GPU buffer limits exceed 5 GiB — sufficient headroom for the 4B quality tier.');
 		return {
 			tier: 'quality',
 			model: byId('qwen3-4b'),
@@ -152,7 +155,13 @@ export function recommend(s: DeviceSignals): Recommendation {
 		};
 	}
 
-	reasons.push('Recommending the 1.7B default tier — the safe WebGPU balance for this device.');
+	if (gpuProxyGiB > 0 && gpuProxyGiB < 5) {
+		reasons.push(
+			`The 4B tier needs GPU buffers beyond this adapter's ~${gpuProxyGiB.toFixed(1)} GiB ceiling once the attention cache grows — recommending the 1.7B, which also has more compatibility fallbacks.`
+		);
+	} else {
+		reasons.push('Recommending the 1.7B default tier — the safe WebGPU balance for this device.');
+	}
 	return {
 		tier: 'default',
 		model: byId('qwen3-1.7b'),

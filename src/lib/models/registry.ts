@@ -24,6 +24,13 @@ export interface ModelEntry {
 	repo: string;
 	/** ONNX weight variant to request. */
 	dtype: string;
+	/**
+	 * Every weight variant that actually exists in the repo (verified against
+	 * the Hub's /tree/main/onnx listing). The engine's failure-fallback ladder
+	 * only tries variants in this list — repos differ, and a blind reload of a
+	 * nonexistent variant 404s.
+	 */
+	availableDtypes: string[];
 	/** Approx download size of the chosen variant, bytes (for the pre-download notice). */
 	approxBytes: number;
 	/** SPDX-ish license string (permissive only). */
@@ -51,6 +58,7 @@ export const MODELS: ModelEntry[] = [
 		tier: 'small',
 		repo: 'onnx-community/Qwen2.5-0.5B-Instruct',
 		dtype: 'q4',
+		availableDtypes: ['q4', 'q4f16', 'int8', 'uint8', 'quantized', 'bnb4', 'fp16'],
 		approxBytes: Math.round(786 * MB), // model_q4.onnx = 786 MB
 		license: 'Apache-2.0',
 		backend: 'wasm',
@@ -63,6 +71,7 @@ export const MODELS: ModelEntry[] = [
 		tier: 'default',
 		repo: 'onnx-community/Qwen3-1.7B-ONNX',
 		dtype: 'q4f16',
+		availableDtypes: ['q4f16', 'q4', 'int8', 'uint8', 'quantized', 'bnb4', 'fp16'],
 		approxBytes: Math.round(1.43 * GB), // model_q4f16.onnx = 1.43 GB
 		license: 'Apache-2.0',
 		backend: 'webgpu',
@@ -75,11 +84,12 @@ export const MODELS: ModelEntry[] = [
 		tier: 'quality',
 		repo: 'onnx-community/Qwen3-4B-ONNX',
 		dtype: 'q4f16',
+		availableDtypes: ['q4f16', 'fp16'], // no q4 — verified 2026-07-08; ladder is GPU-or-nothing
 		approxBytes: Math.round(2.84 * GB), // model_q4f16.onnx (+data shards) = ~2.84 GB
 		license: 'Apache-2.0',
 		backend: 'webgpu',
 		params: '4B',
-		blurb: 'Best answer quality — needs a capable GPU and the largest download.'
+		blurb: 'Best answer quality — needs a GPU with buffer limits above 4 GiB; can hit memory ceilings on common adapters, and has no quantized fallback variant.'
 	}
 ];
 

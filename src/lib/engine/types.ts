@@ -47,6 +47,12 @@ export interface LoadOptions {
 	device?: Backend | 'auto';
 	/** Context-window ceiling the retrieval pipeline was budgeted against. */
 	maxContext?: number;
+	/**
+	 * ONNX weight variants that actually exist in this repo (from the model
+	 * registry). The failure-fallback ladder only tries variants in this list —
+	 * repos differ (e.g. Qwen3-4B ships only q4f16/fp16, no q4).
+	 */
+	availableDtypes?: string[];
 }
 
 export interface GenerateOptions {

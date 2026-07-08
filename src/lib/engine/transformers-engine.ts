@@ -143,7 +143,8 @@ class TransformersEngine implements Engine {
 				id,
 				modelId,
 				dtype: opts?.dtype,
-				device: opts?.device
+				device: opts?.device,
+				availableDtypes: opts?.availableDtypes
 			});
 		});
 	}
