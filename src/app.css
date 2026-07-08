@@ -580,6 +580,67 @@ main#main-content {
 	border-radius: 0.15rem;
 }
 
+/* User highlights & block notes (SPEC.md §7 "Highlights & notes") */
+.block-wrap {
+	position: relative;
+}
+
+.block mark.user-highlight {
+	background: var(--color-highlight);
+	color: inherit;
+	cursor: pointer;
+	border-radius: 0.1rem;
+	padding: 0.03rem 0;
+	box-shadow: 0 0 0 1px transparent;
+}
+
+.block mark.user-highlight:hover,
+.block mark.user-highlight:focus-visible {
+	box-shadow: 0 0 0 1px var(--color-accent);
+	outline: none;
+}
+
+/* Nested highlight marks (overlapping ranges) stack a touch darker per layer. */
+.block mark.user-highlight mark.user-highlight {
+	background: color-mix(in srgb, var(--color-highlight) 60%, var(--color-accent) 15%);
+}
+
+.block-note-btn {
+	position: absolute;
+	top: 0.1rem;
+	right: -2.6rem;
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-radius: 0.3rem;
+	padding: 0.15rem 0.4rem;
+	font-size: 0.72rem;
+	font-family: var(--font-ui);
+	color: var(--color-text-muted);
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.block-wrap:hover .block-note-btn,
+.block-wrap:focus-within .block-note-btn,
+.block-note-btn.has-note {
+	opacity: 1;
+}
+
+.block-note-btn.has-note {
+	color: var(--color-accent);
+	border-color: var(--color-accent);
+}
+
+@media (max-width: 60rem) {
+	.block-note-btn {
+		position: static;
+		display: inline-flex;
+		margin: 0.2rem 0 0.6rem;
+		opacity: 1;
+	}
+}
+
 /* "Before you read" prerequisite panel */
 .prereq-panel {
 	background: var(--color-bg-raised);
@@ -745,10 +806,63 @@ main#main-content {
 }
 
 .concept-card-map-link {
-	display: inline-block;
+	display: block;
 	margin-top: var(--space-1);
 	font-size: 0.85rem;
 	font-weight: 600;
+}
+
+/* Highlight & block-note popovers (HighlightCard.svelte, BlockNoteCard.svelte — share the
+ * .concept-card look) */
+.highlight-card-quote {
+	margin: 0 0 var(--space-1);
+	padding-left: 0.6rem;
+	border-left: 3px solid var(--color-accent);
+	color: var(--color-text);
+	font-style: italic;
+}
+
+.highlight-card-note-text {
+	margin: 0 0 var(--space-1);
+	white-space: pre-wrap;
+}
+
+.highlight-card-note-input {
+	width: 100%;
+	font-family: var(--font-ui);
+	font-size: 0.85rem;
+	padding: 0.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.3rem;
+	background: var(--color-bg);
+	color: var(--color-text);
+	resize: vertical;
+	margin-bottom: 0.4rem;
+}
+
+.highlight-card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin: 0 0 var(--space-1);
+}
+
+.highlight-card-save,
+.highlight-card-cancel {
+	background: var(--color-bg-raised);
+	border: 1px solid var(--color-border);
+	border-radius: 0.3rem;
+	padding: 0.3rem 0.6rem;
+	cursor: pointer;
+	color: var(--color-text);
+	font-size: 0.8rem;
+	font-family: var(--font-ui);
+}
+
+.highlight-card-save:hover {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
 }
 
 /* Continue-reading prompt on the bare /read route */

@@ -18,6 +18,8 @@
 		<a href="/read" aria-current={pathname.startsWith('/read') ? 'page' : undefined}>Read</a>
 		<a href="/map" aria-current={pathname.startsWith('/map') ? 'page' : undefined}>Concept map</a>
 		<a href="/chat" aria-current={pathname.startsWith('/chat') ? 'page' : undefined}>Chat</a>
+		<a href="/pathways" aria-current={pathname.startsWith('/pathways') ? 'page' : undefined}>Pathways</a>
+		<a href="/notebook" aria-current={pathname.startsWith('/notebook') ? 'page' : undefined}>Notebook</a>
 	</nav>
 </header>
 

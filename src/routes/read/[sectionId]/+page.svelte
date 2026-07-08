@@ -4,10 +4,14 @@
 	import { conceptsBySection } from '$lib/data/graph';
 	import { savePosition } from '$lib/stores/reading-position';
 	import { getVisitedSections, markSectionVisited } from '$lib/stores/visited-sections';
+	import { highlights, notes, initAnnotations } from '$lib/stores/highlights';
 	import Block from '$lib/components/Block.svelte';
 	import SectionNav from '$lib/components/SectionNav.svelte';
 	import PrerequisitePanel from '$lib/components/PrerequisitePanel.svelte';
 	import ConceptCard from '$lib/components/ConceptCard.svelte';
+	import SelectionToolbar from '$lib/components/SelectionToolbar.svelte';
+	import HighlightCard from '$lib/components/HighlightCard.svelte';
+	import BlockNoteCard from '$lib/components/BlockNoteCard.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -25,8 +29,67 @@
 	let activeAnchorRect: DOMRect | null = $state(null);
 
 	function openConceptCard(conceptId: string, target: HTMLElement) {
+		closeAllPopovers();
 		activeConceptId = conceptId;
 		activeAnchorRect = target.getBoundingClientRect();
+	}
+
+	// Highlights & notes (SPEC.md §7) — the reactive store is initialised once per slug and read by
+	// both the selection toolbar (writer) and every Block (reader), so a highlight created anywhere
+	// shows up immediately without prop-drilling a callback chain.
+	$effect(() => {
+		initAnnotations(data.slug);
+	});
+
+	let sectionHighlights = $derived($highlights.filter((h) => h.sectionId === data.section.id));
+	let sectionNotes = $derived($notes.filter((n) => n.sectionId === data.section.id));
+
+	function highlightsFor(anchor: string) {
+		return sectionHighlights.filter((h) => h.anchor === anchor).map((h) => ({ id: h.id, start: h.start, end: h.end }));
+	}
+
+	function blockNoteFor(anchor: string) {
+		return sectionNotes.find((n) => n.highlightId === null && n.blockAnchor === anchor);
+	}
+
+	// Highlight popover state. `highlightAutoEdit` is set when the selection toolbar's "Add note"
+	// already created the highlight and just wants the note editor open immediately (SPEC.md §7
+	// "notes attach to a highlight or a whole block").
+	let activeHighlightId: string | null = $state(null);
+	let activeHighlightRect: DOMRect | null = $state(null);
+	let highlightAutoEdit = $state(false);
+
+	function openHighlightCard(highlightId: string, target: HTMLElement) {
+		closeAllPopovers();
+		activeHighlightId = highlightId;
+		activeHighlightRect = target.getBoundingClientRect();
+	}
+
+	function openNoteForHighlight(highlightId: string, rect: DOMRect) {
+		closeAllPopovers();
+		activeHighlightId = highlightId;
+		activeHighlightRect = rect;
+		highlightAutoEdit = true;
+	}
+
+	// Whole-block note popover state (the block's own "+ note" affordance — never touches a highlight).
+	let activeNoteBlockAnchor: string | null = $state(null);
+	let activeNoteRect: DOMRect | null = $state(null);
+
+	function openBlockNote(anchor: string, target: HTMLElement) {
+		closeAllPopovers();
+		activeNoteBlockAnchor = anchor;
+		activeNoteRect = target.getBoundingClientRect();
+	}
+
+	function closeAllPopovers() {
+		activeConceptId = null;
+		activeAnchorRect = null;
+		activeHighlightId = null;
+		activeHighlightRect = null;
+		highlightAutoEdit = false;
+		activeNoteBlockAnchor = null;
+		activeNoteRect = null;
 	}
 
 	function closeConceptCard() {
@@ -68,7 +131,7 @@
 	$effect(() => {
 		savePosition(data.slug, data.section.id);
 		visitedSections = markSectionVisited(data.slug, data.section.id);
-		closeConceptCard();
+		closeAllPopovers();
 	});
 
 	// Deep links: /read/[sectionId]#<anchor> scrolls to and briefly highlights that block. Runs
@@ -111,6 +174,9 @@
 				View this section's concepts in the map &rarr;
 			</a>
 		{/if}
+		<a class="section-map-link" href="/practice/{data.section.id}">
+			Practice this section &rarr;
+		</a>
 	</header>
 
 	{#if data.graph}
@@ -124,12 +190,18 @@
 			hidden={isRedundantObjectivesBlock(i)}
 			breadcrumb={ancestorBreadcrumb(i)}
 			{glossaryConcepts}
+			userHighlights={highlightsFor(block.anchor)}
+			hasBlockNote={!!blockNoteFor(block.anchor)}
 			onConceptActivate={openConceptCard}
+			onHighlightActivate={openHighlightCard}
+			onBlockNoteActivate={(target) => openBlockNote(block.anchor, target)}
 		/>
 	{/each}
 
 	<SectionNav prev={data.prev} next={data.next} />
 </article>
+
+<SelectionToolbar slug={data.slug} section={data.section} onNoteRequest={openNoteForHighlight} />
 
 {#if data.graph && activeConceptId}
 	<ConceptCard
@@ -140,4 +212,38 @@
 		onClose={closeConceptCard}
 		onSelectConcept={(id) => (activeConceptId = id)}
 	/>
+{/if}
+
+{#if activeHighlightId}
+	{@const h = sectionHighlights.find((x) => x.id === activeHighlightId)}
+	{#if h}
+		<!-- Keyed on the highlight id so switching directly from one highlight's popover to another's
+		     (both under the same `{#if}` branch) remounts the card rather than reusing an instance
+		     whose `draft`/`editing` $state was initialized from the previous highlight's note. -->
+		{#key h.id}
+			<HighlightCard
+				slug={data.slug}
+				highlight={h}
+				note={sectionNotes.find((n) => n.highlightId === h.id) ?? null}
+				anchorRect={activeHighlightRect}
+				autoEdit={highlightAutoEdit}
+				onClose={closeAllPopovers}
+			/>
+		{/key}
+	{/if}
+{/if}
+
+{#if activeNoteBlockAnchor}
+	{#key activeNoteBlockAnchor}
+		<BlockNoteCard
+			slug={data.slug}
+			blockAnchor={activeNoteBlockAnchor}
+			sectionId={data.section.id}
+			sectionTitle={data.section.title}
+			sectionNumber={data.section.number}
+			note={blockNoteFor(activeNoteBlockAnchor) ?? null}
+			anchorRect={activeNoteRect}
+			onClose={closeAllPopovers}
+		/>
+	{/key}
 {/if}
