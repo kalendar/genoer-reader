@@ -282,9 +282,11 @@ user owns and can move their annotation layer independently of the app.
 
 ## 8. Book loading
 
-- **Bundled reference book:** OpenStax *Entrepreneurship* (CC BY; both
-  pipelines are validated on it), with its pre-built, verified `graph.json`.
-  The demo works instantly with zero configuration.
+- **Bundled reference book:** OpenStax *Entrepreneurship* (CC BY-NC-SA 4.0;
+  both pipelines are validated on it), with its pre-built, verified
+  `graph.json`. The demo works instantly with zero configuration. Because the
+  reference book carries NC and SA terms, the attribution UI (§4) must surface
+  them prominently — which usefully demonstrates that part of the design.
 - **Load your own:** (a) a URL parameter pointing at a directory containing
   `book.json` (+ optional `graph.json`, `media/`) on any static host, and
   (b) local file/folder or zip drop, processed entirely in-browser.
@@ -347,7 +349,7 @@ The PoC should *demonstrate* the 5Rs, not just permit them:
 | Layer | License | Notes |
 |---|---|---|
 | Application code | MIT (or Apache-2.0 — decide once) | Fork-and-remix friendly |
-| Content (`book.json`, media) | Per book; reference book CC BY 4.0 | Carried through from the collection by the converter; NC/SA surfaced in UI |
+| Content (`book.json`, media) | Per book; reference book CC BY-NC-SA 4.0 | Carried through from the collection by the converter; NC/SA surfaced in UI |
 | Graph (`graph.json`) | Same as its source book | Derivative of the content |
 | Pipelines | Per kalendar/openstax-convert and kalendar/openstax-graph repos | Linked from About page |
 | Model weights | Apache-2.0 or MIT only (default list) | The openness claim extends to the model |
