@@ -13,16 +13,43 @@
  *    Settings panel's usage display and "Remove downloaded models" button.
  */
 
-/** Register the service worker built from `src/service-worker.ts`. No-op outside the browser, on
- * browsers without the API, or during `npm run dev` (Vite's dev server doesn't emit it — only
- * `vite build`/`vite preview` do, since it's produced by the static adapter). Safe to call from
- * every page; call once, e.g. from the root layout's `onMount`. */
+import { dev } from '$app/environment';
+
+/** Register the service worker built from `src/service-worker.ts` — PRODUCTION ONLY.
+ *
+ * Contrary to this function's original assumption, SvelteKit's dev server DOES serve
+ * `/service-worker.js` (it responded 200 in dev), so unconditional registration installed a live
+ * SW over the dev server. That breaks dev retroactively: the SW precaches a shell snapshot and
+ * keeps intercepting fetches while Vite's module URLs churn across restarts — field-reported as
+ * "chat stopped working" the session after the SW shipped, with the app code unchanged.
+ *
+ * In dev this now actively UNREGISTERS any existing registration and clears the app-shell/media
+ * caches, so a browser poisoned by an earlier dev visit heals itself on the next load. (The
+ * Transformers.js model cache is deliberately left alone — multi-GB, SW-independent, still valid.)
+ * Safe to call from every page; call once, e.g. from the root layout's `onMount`. */
 export async function registerServiceWorker(): Promise<void> {
 	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+	if (dev) {
+		try {
+			const regs = await navigator.serviceWorker.getRegistrations();
+			for (const reg of regs) await reg.unregister();
+			if (typeof caches !== 'undefined') {
+				for (const key of await caches.keys()) {
+					if (key.startsWith('genoer-')) await caches.delete(key);
+				}
+			}
+			if (regs.length > 0) {
+				console.info('[storage] dev mode: unregistered stale service worker(s) — reload once more for a clean page');
+			}
+		} catch {
+			/* best-effort cleanup */
+		}
+		return;
+	}
 	try {
 		await navigator.serviceWorker.register('/service-worker.js', { type: 'module' });
 	} catch (err) {
-		// Missing in dev (no build output) or unsupported — non-fatal, the app works fully online.
+		// Unsupported browser — non-fatal, the app works fully online.
 		console.info('[storage] service worker registration skipped:', err instanceof Error ? err.message : err);
 	}
 }
