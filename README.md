@@ -76,7 +76,10 @@ symlink at `static/books/entrepreneurship`. See `src/lib/data/book.ts` /
 `src/lib/data/graph.ts` for the data-loading modules and schema types.
 
 To get the media locally (for local development with working images), run
-the [openstax-convert](https://github.com/kalendar/openstax-convert)
+`npm run fetch-media` (`scripts/fetch-media.mjs` — plain Node, no deps; downloads
+the ~217 referenced files from the upstream `osbooks-entrepreneurship` repo,
+skipping any already present) or, if you're iterating on the source content
+itself, run the [openstax-convert](https://github.com/kalendar/openstax-convert)
 pipeline against the source OpenStax collection and copy its `media/`
 output into `book-data/entrepreneurship/media/`. The app works correctly
 without this step — see above.
@@ -133,17 +136,50 @@ behavior, not a bug.
 
 ## Deploying (GitHub Pages)
 
-1. Fork the repo (see the footer's "Fork it on GitHub" link — `REPO_URL` in
-   `src/lib/utils/repo.ts` is a placeholder pending a decided repo home,
-   SPEC.md §14).
-2. Optionally add the bundled book's `media/` (see "Book data" above) if
-   you want the reference book's images to work; the app deploys and works
-   fine without it.
-3. `npm run build` — the static site is written to `./build`.
-4. Enable GitHub Pages for the repo (Settings → Pages → deploy from a
-   `gh-pages` branch or via a GitHub Actions workflow that runs the build
-   and publishes `./build`). No server, no environment variables, no
-   secrets — the whole deploy story really is "fork, enable Pages."
+The repo ships with a GitHub Actions workflow
+(`.github/workflows/deploy.yml`) that makes "fork it and Pages just works"
+literally true — no forked-repo edits needed:
+
+1. Fork the repo (see the footer's "Fork it on GitHub" link, `REPO_URL` in
+   `src/lib/utils/repo.ts`).
+2. Settings → Pages → Source: **GitHub Actions**.
+3. Push to `main` (or run the workflow manually via Actions → "Deploy to
+   GitHub Pages" → Run workflow). The workflow:
+   - checks out the repo and installs dependencies (`npm ci`);
+   - runs `node scripts/fetch-media.mjs`, which downloads the bundled
+     reference book's ~217 media files straight from the upstream
+     `osbooks-entrepreneurship` repo on GitHub (skipping any already
+     present) — so a fresh fork gets working images without anyone
+     hand-copying a `media/` folder;
+   - builds with `BASE_PATH="/${{ github.event.repository.name }}"`, so
+     the site's internal links/fetches are correctly prefixed for a
+     **project** Pages site (`https://<user>.github.io/<repo>/`) —
+     `${{ github.event.repository.name }}` (not a hardcoded
+     `genoer-reader`) is what keeps this working under any fork name;
+   - uploads `./build` as a Pages artifact and deploys it.
+
+No server, no environment variables to set by hand, no secrets — the whole
+deploy story really is "fork, flip one Settings toggle, push."
+
+### Base path
+
+GitHub Pages project sites serve from a subpath, not the domain root, so
+every root-absolute internal reference (nav links, citations, `book.json`/
+`graph.json`/media fetches, the service worker's precache list) is prefixed
+via SvelteKit's `paths.base` (`vite.config.ts`, wired from the `BASE_PATH`
+env var; see `$app/paths`'s `base` throughout `src/`). `BASE_PATH` is unset
+in local dev and in a plain `npm run build`, so those remain byte-for-byte
+unaffected — only the deploy workflow's build sets it. If you deploy
+elsewhere at the domain root (a user/org Pages site, a bucket, a thumb
+drive), just build with no `BASE_PATH` set.
+
+### Media, manually
+
+Prefer not to rely on the workflow's `fetch-media` step (e.g. building
+locally for your own deploy)? Run `npm run fetch-media` yourself before
+`npm run build`, or copy `media/` in directly per "Book data" above — the
+app deploys and works fine without it either way (figures fall back to alt
+text).
 
 Because the whole app is prerendered per SPEC.md §2, every route ships as a
 real static file — including a page per section of the bundled book,
