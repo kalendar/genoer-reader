@@ -26,7 +26,7 @@
 import type { Engine, Backend } from '$lib/engine';
 import { recommendForDevice, type DeviceSignals, type Recommendation } from '$lib/models/probe';
 import { loadSettings, saveSettings, resolveModel, type ModelSettings } from '$lib/models/settings';
-import { requestPersistentStorage } from '$lib/utils/storage';
+import { requestPersistentStorage, hasCachedWeights } from '$lib/utils/storage';
 
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -55,6 +55,12 @@ class EngineState {
 	settings = $state<ModelSettings>({ modelId: 'qwen3-1.7b', contextLength: 8192, device: 'auto' });
 	signals = $state<DeviceSignals | null>(null);
 	recommendation = $state<Recommendation | null>(null);
+	/**
+	 * True while {@link autoLoadIfCached} is deciding/loading — lets panels keep
+	 * the settings collapsed instead of flashing the full panel before the
+	 * from-cache auto-load kicks in.
+	 */
+	autoLoadPending = $state(false);
 
 	/**
 	 * Probe device capability once for the whole app session and apply
@@ -131,6 +137,33 @@ class EngineState {
 		} catch (e) {
 			this.status = 'error';
 			this.engineError = engineErrorMessage(e);
+		}
+	}
+
+	/**
+	 * Auto-load the selected model IF (and only if) its weights are already in
+	 * the browser cache. This does NOT violate "nothing downloads without a
+	 * click" (SPEC §5) — the click-gate exists to prevent surprise multi-GB
+	 * downloads, and a cache read downloads nothing; the user already clicked
+	 * once, in some earlier session, for exactly this model. First-time users
+	 * still see the picker and choose explicitly.
+	 */
+	async autoLoadIfCached(): Promise<void> {
+		if (this.status !== 'idle') return;
+		this.autoLoadPending = true;
+		try {
+			await this.ensureProbed();
+			if (this.status !== 'idle') return;
+			const resolved = resolveModel(this.settings);
+			// Only auto-load when the actual weights are cached — config/tokenizer
+			// remnants from an aborted download must not trigger a surprise
+			// multi-hundred-MB fetch.
+			if (!(await hasCachedWeights(resolved.repo))) return;
+			await this.loadModel();
+		} catch {
+			/* best-effort — the picker remains available */
+		} finally {
+			this.autoLoadPending = false;
 		}
 	}
 

@@ -59,10 +59,10 @@
 	let streaming = $state('');
 	let streamingPassages = $state<Passage[]>([]);
 	let speedWarning = $state(false);
-	// Start collapsed if a model is already loaded (e.g. loaded from this panel
-	// or from Practice earlier in the session) — don't re-prompt for something
-	// that's already ready.
-	let showSettings = $state(engineState.status !== 'ready');
+	// Start collapsed: if a model is ready (or about to auto-load from cache),
+	// the transcript deserves the screen real estate. `onMount` opens the
+	// settings only when the from-cache auto-load finds nothing to load.
+	let showSettings = $state(false);
 
 	// Seeded context from the reader's selection toolbar (SPEC.md §7 "Explain-selected-text") — set
 	// once on mount if the user arrived here via Explain/Simplify/Give me an example. Grounds the
@@ -75,6 +75,10 @@
 
 	const loadedModelName = $derived(
 		MODELS.find((m) => m.id === engineState.loadedModelId)?.name ?? engineState.loadedModelId ?? ''
+	);
+	/** Name of the model currently SELECTED (may differ from the loaded one mid-load). */
+	const selectedModelName = $derived(
+		MODELS.find((m) => m.id === engineState.settings.modelId)?.name ?? engineState.settings.modelId
 	);
 
 	const GEN_HEADROOM = 512;
@@ -104,14 +108,40 @@
 		);
 	});
 
+	// Seeded turns (Explain this / Simplify this / Give me an example from the
+	// reader) auto-submit once the engine is ready — the user already expressed
+	// the intent by clicking; making them press Send again is pure friction.
+	let autoSendSeed = $state(false);
+
 	onMount(() => {
 		turns = loadHistory(slug);
 		const pendingSeed = consumeSeededContext();
 		if (pendingSeed) {
 			seed = pendingSeed;
 			question = seedQuestionText(pendingSeed);
+			autoSendSeed = true;
 		}
-		void engineState.ensureProbed();
+		void (async () => {
+			// Try to attach the already-cached model without a click; only if
+			// there's nothing cached (or it failed) do we open the full picker.
+			await engineState.autoLoadIfCached();
+			if (engineState.status !== 'ready' && engineState.status !== 'loading') {
+				showSettings = true;
+			}
+		})();
+	});
+
+	$effect(() => {
+		if (
+			autoSendSeed &&
+			seed &&
+			engineState.status === 'ready' &&
+			!generating &&
+			question.trim().length > 0
+		) {
+			autoSendSeed = false;
+			void send();
+		}
 	});
 
 	// Auto-collapse settings the moment the shared engine transitions into
@@ -288,10 +318,17 @@
 				Change
 			</button>
 		</div>
+	{:else if engineState.status === 'loading' && !showSettings}
+		<!-- Compact progress line for the from-cache auto-load — settings stay collapsed. -->
+		<div class="model-bar" role="status">
+			<span class="model-bar-item">
+				Loading {selectedModelName} from your browser cache… {Math.round(engineState.progress * 100)}%
+			</span>
+		</div>
 	{/if}
 
 	<div class="chat-scroller" bind:this={scroller}>
-		{#if showSettings || engineState.status !== 'ready'}
+		{#if showSettings || (engineState.status !== 'ready' && engineState.status !== 'loading' && !engineState.autoLoadPending)}
 			<div class="settings-wrap">
 				<ModelSettingsPanel
 					bind:settings={engineState.settings}
@@ -407,7 +444,7 @@
 			placeholder={engineState.status === 'ready'
 				? 'Ask a question about this book…'
 				: 'Load a model above to start chatting…'}
-			rows="2"
+			rows="4"
 			disabled={engineState.status !== 'ready' || generating}
 		></textarea>
 		{#if generating}

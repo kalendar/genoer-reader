@@ -157,3 +157,33 @@ export async function clearModelCache(): Promise<void> {
 	if (typeof caches === 'undefined') return;
 	await caches.delete(TRANSFORMERS_CACHE_NAME);
 }
+
+/**
+ * True when the repo's actual ONNX WEIGHTS (not just its few-KB config/tokenizer
+ * files, which an aborted download also leaves behind) are in the model cache.
+ * Checks for the entry's existence by URL rather than summing Content-Length —
+ * large CDN responses don't reliably carry that header, and `cache.put` only
+ * stores fully-downloaded bodies, so presence of a `.onnx`/`.onnx_data` entry
+ * means a complete weights file. Used to decide whether a model can be
+ * auto-loaded without triggering a surprise download.
+ */
+export async function hasCachedWeights(repo: string): Promise<boolean> {
+	if (typeof caches === 'undefined') return false;
+	try {
+		const cache = await caches.open(TRANSFORMERS_CACHE_NAME);
+		const requests = await cache.keys();
+		return requests.some((req) => {
+			try {
+				const { pathname } = new URL(req.url);
+				return (
+					pathname.includes(`/${repo}/`) &&
+					(pathname.endsWith('.onnx') || pathname.includes('.onnx_data'))
+				);
+			} catch {
+				return false;
+			}
+		});
+	} catch {
+		return false;
+	}
+}
