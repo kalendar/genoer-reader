@@ -389,9 +389,10 @@ via capability probe** (§5); framework **Svelte/SvelteKit**; concept map
 **Cytoscape.js**; **MathJax fallback in**; **teacher view deferred** (§12).
 
 Remaining open items (deferrable to build time):
-1. **Exact model checkpoints** for the three tiers — pick from what's current
-   on the Hub when milestone 3 starts; the licensing constraint is fixed here.
+1. **Exact model checkpoints** for the three tiers — RESOLVED during the build:
+   Qwen3-0.6B (q4f16 WebGPU / q4 CPU) + Qwen3-4B, on transformers.js pinned to
+   ^3.7.1 (see the registry's comments and /dev/engine-test for the constraints
+   discovered in field debugging).
 2. **Visual design language** — not specified here; worth a lightweight pass
    before milestone 1 so the reader feels like a book, not an app.
-3. **Repo home** — which GitHub org/repo hosts the app (affects the Pages URL
-   and the fork-to-deploy instructions).
+3. **Repo home** — RESOLVED (2026-07-09): https://github.com/kalendar/genoer-reader.

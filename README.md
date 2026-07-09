@@ -180,8 +180,6 @@ a "make your own" walkthrough.
 - **Icons** (`static/icons/*.png`, `static/icons/icon.svg`): functional
   placeholders generated for this milestone, not real brand assets — swap
   before a public deploy.
-- **`REPO_URL`** (`src/lib/utils/repo.ts`): points at a placeholder GitHub
-  path pending SPEC.md §14's still-open "repo home" decision.
 - **True offline (network-disconnected) testing** was verified indirectly
   — Cache Storage contents and the service worker's fetch-handler logic
   were inspected directly rather than tested with the network physically
