@@ -2,6 +2,7 @@
 	import type { GraphIndex, ConceptNode } from '$lib/data/graph';
 	import { conceptsBySection, prerequisiteAncestors, isEarlierSection } from '$lib/data/graph';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 
 	let bookSuffix = $derived(bookQuerySuffix());
 
@@ -63,7 +64,7 @@
 		<ul class="prereq-list">
 			{#each prerequisites as entry (entry.concept.id)}
 				<li class="prereq-item" class:prereq-visited={visitedSections.has(entry.sectionModule)}>
-					<a href="/read/{entry.sectionModule}{bookSuffix}" class="prereq-term">{entry.concept.term}</a>
+					<a href="{base}/read/{entry.sectionModule}{bookSuffix}" class="prereq-term">{entry.concept.term}</a>
 					<span class="prereq-definition">{entry.concept.definition}</span>
 					<span class="prereq-source">
 						{entry.sectionNumber ? `§${entry.sectionNumber} ` : ''}{entry.sectionTitle}

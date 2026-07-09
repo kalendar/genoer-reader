@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TocEntry } from '$lib/data/book';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 
 	let {
 		toc,
@@ -38,7 +39,7 @@
 			{:else if entry.id}
 				<li>
 					<a
-						href="/read/{entry.id}{bookSuffix}"
+						href="{base}/read/{entry.id}{bookSuffix}"
 						aria-current={currentSectionId === entry.id ? 'page' : undefined}
 						onclick={() => onClose?.()}
 					>

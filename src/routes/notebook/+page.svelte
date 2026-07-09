@@ -19,6 +19,7 @@
 		clearAnnotations
 	} from '$lib/stores/highlights';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -89,7 +90,7 @@
 			<p class="notebook-intro">
 				Every highlight and note you've made, stored only in this browser. Export them as a
 				single JSON file any time — your annotations are yours to keep, independent of this app.
-				Want chat history and practice sessions too? See <a href="/about#retain-heading">Export
+				Want chat history and practice sessions too? See <a href="{base}/about#retain-heading">Export
 				everything</a> on the About page.
 			</p>
 		</div>
@@ -123,7 +124,7 @@
 					<li class="notebook-item">
 						<blockquote class="notebook-quote">&ldquo;{highlight.text}&rdquo;</blockquote>
 						<div class="notebook-meta">
-							<a href="/read/{highlight.sectionId}{bookSuffix}#{highlight.anchor}">
+							<a href="{base}/read/{highlight.sectionId}{bookSuffix}#{highlight.anchor}">
 								{highlight.sectionNumber ? `§${highlight.sectionNumber} ` : ''}{highlight.sectionTitle}
 							</a>
 							<span class="notebook-date">{new Date(highlight.createdAt).toLocaleDateString()}</span>
@@ -166,7 +167,7 @@
 				{#each blockNotes as note (note.id)}
 					<li class="notebook-item">
 						<div class="notebook-meta">
-							<a href="/read/{note.sectionId}{bookSuffix}#{note.blockAnchor}">
+							<a href="{base}/read/{note.sectionId}{bookSuffix}#{note.blockAnchor}">
 								{note.sectionNumber ? `§${note.sectionNumber} ` : ''}{note.sectionTitle}
 							</a>
 							<span class="notebook-date">{new Date(note.createdAt).toLocaleDateString()}</span>

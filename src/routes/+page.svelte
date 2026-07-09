@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LoadBookForm from '$lib/components/LoadBookForm.svelte';
+	import { base } from '$app/paths';
 </script>
 
 <svelte:head>
@@ -13,10 +14,10 @@
 		a knowledge graph, and an on-device AI, running entirely in your browser. No backend, no
 		accounts, no cost.
 	</p>
-	<a class="cta" href="/read">Start reading the bundled book &rarr;</a>
+	<a class="cta" href="{base}/read">Start reading the bundled book &rarr;</a>
 	<p class="landing-about-link">
 		Curious how this works, or what "openly licensed all the way down" means here? See
-		<a href="/about">the About page</a>.
+		<a href="{base}/about">the About page</a>.
 	</p>
 
 	<section class="landing-loader" aria-labelledby="load-your-own-heading">

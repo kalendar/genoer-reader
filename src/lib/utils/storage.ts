@@ -14,6 +14,7 @@
  */
 
 import { dev } from '$app/environment';
+import { base } from '$app/paths';
 
 /** Register the service worker built from `src/service-worker.ts` — PRODUCTION ONLY.
  *
@@ -47,7 +48,10 @@ export async function registerServiceWorker(): Promise<void> {
 		return;
 	}
 	try {
-		await navigator.serviceWorker.register('/service-worker.js', { type: 'module' });
+		// Root-relative would register at the domain root, not this deploy's subpath (GitHub Pages
+		// project sites serve from `<base>/`) — a mismatched scope would either fail outright or
+		// silently control the wrong scope.
+		await navigator.serviceWorker.register(`${base}/service-worker.js`, { type: 'module' });
 	} catch (err) {
 		// Unsupported browser — non-fatal, the app works fully online.
 		console.info('[storage] service worker registration skipped:', err instanceof Error ? err.message : err);

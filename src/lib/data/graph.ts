@@ -12,6 +12,7 @@
  * `GraphIndex` exists (callers should branch on that at the UI layer — see
  * `$lib/stores/graph.ts`).
  */
+import { base } from '$app/paths';
 
 /** A glossary/concept vocabulary node, e.g. "concept:due-diligence". */
 export interface ConceptNode {
@@ -92,7 +93,7 @@ export interface GraphData {
 /** Where a book's `graph.json` lives, given its slug (parallels `bookUrl` in `$lib/data/book.ts`).
  * Pass `baseUrl` for a "load your own" book hosted elsewhere (SPEC.md §8). */
 export function graphUrl(slug: string, baseUrl?: string): string {
-	return baseUrl ? `${baseUrl}graph.json` : `/books/${slug}/graph.json`;
+	return baseUrl ? `${baseUrl}graph.json` : `${base}/books/${slug}/graph.json`;
 }
 
 export class GraphValidationError extends Error {}

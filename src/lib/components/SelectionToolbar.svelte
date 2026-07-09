@@ -14,6 +14,7 @@
 	 * non-collapsed check.
 	 */
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import type { Section } from '$lib/data/book';
 	import { currentBlockSelection } from '$lib/utils/text-offset';
 	import { addHighlight, addNote } from '$lib/stores/highlights';
@@ -89,7 +90,7 @@
 			sectionNumber: section.number
 		});
 		clearSelectionAndHide();
-		goto('/chat');
+		goto(`${base}/chat`);
 	}
 
 	function createHighlight() {

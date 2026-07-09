@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PracticePanel from '$lib/components/PracticePanel.svelte';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -25,7 +26,7 @@
 	/>
 
 	<p class="practice-back">
-		<a href="/read/{data.section.id}{bookSuffix}">&larr; Back to {data.section.title}</a>
+		<a href="{base}/read/{data.section.id}{bookSuffix}">&larr; Back to {data.section.title}</a>
 	</p>
 </main>
 

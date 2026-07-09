@@ -4,6 +4,7 @@
 	import { getPosition } from '$lib/stores/reading-position';
 	import { firstSection } from '$lib/data/book';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -22,7 +23,7 @@
 		const saved = getPosition(data.slug);
 		const targetId = saved?.sectionId ?? first?.id;
 		if (targetId) {
-			goto(`/read/${targetId}${searchSuffix}`, { replaceState: true });
+			goto(`${base}/read/${targetId}${searchSuffix}`, { replaceState: true });
 		}
 	});
 </script>
@@ -34,6 +35,6 @@
 <div class="continue-reading">
 	<p>Loading the reader…</p>
 	{#if first}
-		<p><a href="/read/{first.id}{searchSuffix}">Start reading: {first.title}</a></p>
+		<p><a href="{base}/read/{first.id}{searchSuffix}">Start reading: {first.title}</a></p>
 	{/if}
 </div>

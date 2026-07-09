@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { base } from '$app/paths';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import AttributionFooter from '$lib/components/AttributionFooter.svelte';
 	import { setCurrentBook } from '$lib/stores/book';
@@ -49,7 +50,7 @@
 			<p class="custom-source-banner" role="status">
 				Reading a book loaded {data.source.kind === 'url' ? 'from a URL' : 'from a local file'} —
 				not the bundled reference book.
-				<a href="/">Switch books</a>
+				<a href="{base}/">Switch books</a>
 			</p>
 		{/if}
 		{#if data.warnings.length > 0}

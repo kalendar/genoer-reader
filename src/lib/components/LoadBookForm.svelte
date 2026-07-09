@@ -14,6 +14,7 @@
 	 * nothing here ever navigates to a broken route on failure.
 	 */
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { resolveActiveBook, BookLoadError } from '$lib/data/resolve-book';
 	import { validateBook, DEFAULT_BOOK_SLUG, type Book } from '$lib/data/book';
 	import { validateGraph } from '$lib/data/graph';
@@ -36,7 +37,7 @@
 		urlLoading = true;
 		try {
 			const resolved = await resolveActiveBook({ fetch, bookParam: value });
-			await goto(`/read?book=${encodeURIComponent(value)}`);
+			await goto(`${base}/read?book=${encodeURIComponent(value)}`);
 			void resolved; // resolveActiveBook already registered the source; nothing else to do
 		} catch (err) {
 			urlError = err instanceof BookLoadError || err instanceof Error ? err.message : String(err);
@@ -120,7 +121,7 @@
 				savedAt: Date.now()
 			});
 			registerBookSource(slug, 'local', { label: parsedBook.title });
-			await goto(`/read?book=local:${encodeURIComponent(slug)}`);
+			await goto(`${base}/read?book=local:${encodeURIComponent(slug)}`);
 		} catch (err) {
 			fileError = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -221,7 +222,7 @@
 			<ul>
 				{#each recentSources as entry (entry.slug)}
 					<li>
-						<a href="/read?book={encodeURIComponent(entry.kind === 'local' ? `local:${entry.slug}` : (entry.url ?? entry.slug))}">
+						<a href="{base}/read?book={encodeURIComponent(entry.kind === 'local' ? `local:${entry.slug}` : (entry.url ?? entry.slug))}">
 							{entry.label}
 						</a>
 						<span class="load-book-recent-kind">{entry.kind === 'local' ? 'local file' : 'URL'}</span>
@@ -233,7 +234,7 @@
 	{/if}
 
 	<p class="load-book-bundled">
-		Or just <a href="/read?book={DEFAULT_BOOK_SLUG}">read the bundled reference book</a> — no setup required.
+		Or just <a href="{base}/read?book={DEFAULT_BOOK_SLUG}">read the bundled reference book</a> — no setup required.
 	</p>
 </div>
 

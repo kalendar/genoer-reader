@@ -15,6 +15,7 @@
 	import { prerequisitePathway } from '$lib/data/graph';
 	import MapSearch from '$lib/components/map/MapSearch.svelte';
 	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -92,7 +93,7 @@
 				<h2>Path to understanding <em>{target.term}</em></h2>
 				<a
 					class="pathway-graph-link"
-					href="/map?concept={encodeURIComponent(target.id)}&view=prerequisite{bookAmp}"
+					href="{base}/map?concept={encodeURIComponent(target.id)}&view=prerequisite{bookAmp}"
 				>
 					View as graph &rarr;
 				</a>
@@ -115,7 +116,7 @@
 						<span class="pathway-step-index">{i === pathway.length - 1 && priorSteps.length > 0 ? 'Goal' : i + 1}</span>
 						<div class="pathway-step-body">
 							{#if step.section}
-								<a class="pathway-step-term" href="/read/{step.section.module}{bookSuffix}">{step.concept.term}</a>
+								<a class="pathway-step-term" href="{base}/read/{step.section.module}{bookSuffix}">{step.concept.term}</a>
 							{:else}
 								<span class="pathway-step-term">{step.concept.term}</span>
 							{/if}

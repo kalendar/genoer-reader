@@ -6,6 +6,7 @@
  * The model is prompted to cite by passage anchor; we display the citation as a
  * compact "[n]" that deep-links to `/read/<sectionId>#<anchor>`.
  */
+import { base } from '$app/paths';
 import type { Passage } from '$lib/retrieval';
 
 export type Segment =
@@ -32,7 +33,7 @@ export function parseCitations(text: string, passages: Passage[]): Segment[] {
 			anchor,
 			index: passage.index,
 			sectionId: passage.sectionId,
-			href: `/read/${passage.sectionId}#${anchor}`
+			href: `${base}/read/${passage.sectionId}#${anchor}`
 		});
 		last = m.index + m[0].length;
 	}

@@ -3,6 +3,7 @@
 	import { getNode } from '$lib/data/graph';
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 
 	let {
 		graph,
@@ -102,7 +103,7 @@
 			{#if definedSection}
 				<p class="detail-panel-row">
 					Defined in
-					<a href="/read/{definedSection.module}{bookSuffix}">
+					<a href="{base}/read/{definedSection.module}{bookSuffix}">
 						{definedSection.number ? `${definedSection.number} ` : ''}{definedSection.title}
 					</a>
 				</p>
@@ -112,7 +113,7 @@
 		{:else}
 			{#if node.chapter != null}<p class="detail-panel-row">Chapter {node.chapter}</p>{/if}
 			<p class="detail-panel-row">
-				<a href="/read/{node.module}{bookSuffix}">Open in reader &rarr;</a>
+				<a href="{base}/read/{node.module}{bookSuffix}">Open in reader &rarr;</a>
 			</p>
 		{/if}
 
@@ -143,10 +144,10 @@
 		{/if}
 
 		{#if node.kind === 'concept'}
-			<a class="detail-panel-map-link" href="/map?concept={encodeURIComponent(node.id)}&view=neighborhood{bookAmp}">
+			<a class="detail-panel-map-link" href="{base}/map?concept={encodeURIComponent(node.id)}&view=neighborhood{bookAmp}">
 				Center neighborhood view here
 			</a>
-			<a class="detail-panel-map-link" href="/pathways?concept={encodeURIComponent(node.id)}{bookAmp}">
+			<a class="detail-panel-map-link" href="{base}/pathways?concept={encodeURIComponent(node.id)}{bookAmp}">
 				Path to this concept &rarr;
 			</a>
 		{/if}

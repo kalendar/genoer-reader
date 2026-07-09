@@ -15,6 +15,7 @@
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 	import { prefersReducedMotion } from '$lib/utils/motion';
 	import { bookQuerySuffix, bookAmpParam } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -200,11 +201,11 @@
 			</section>
 		{/if}
 		{#if glossaryConcepts.length > 0}
-			<a class="section-map-link" href="/map?concept={glossaryConcepts.map((c) => encodeURIComponent(c.id)).join(',')}&view=neighborhood{bookAmp}">
+			<a class="section-map-link" href="{base}/map?concept={glossaryConcepts.map((c) => encodeURIComponent(c.id)).join(',')}&view=neighborhood{bookAmp}">
 				View this section's concepts in the map &rarr;
 			</a>
 		{/if}
-		<a class="section-map-link" href="/practice/{data.section.id}{bookSuffix}">
+		<a class="section-map-link" href="{base}/practice/{data.section.id}{bookSuffix}">
 			Practice this section &rarr;
 		</a>
 		<JsonViewer

@@ -23,7 +23,10 @@
  * ... cached permanently"); see `$lib/utils/storage.ts` for how the app
  * inspects/clears that cache from the Model Settings panel.
  */
-import { build, files, prerendered, version } from '$service-worker';
+// `$service-worker`'s own `base` (not `$app/paths`'s) — service workers can't use `$app/paths`, and
+// this one is derived from `location.pathname` at runtime, which SvelteKit's docs note "will
+// continue to work correctly if the site is deployed to a subdirectory."
+import { base, build, files, prerendered, version } from '$service-worker';
 
 const CACHE_NAME = `genoer-shell-${version}`;
 const MEDIA_CACHE_NAME = 'genoer-media';
@@ -116,8 +119,10 @@ sw.addEventListener('fetch', (event) => {
 			} catch (err) {
 				// Offline and not precached — for a navigation request, fall back to the shell's root
 				// page rather than a hard failure, since this is a client-routed SPA once hydrated.
+				// `base` is a subpath (e.g. "/genoer-reader") under a GitHub Pages project deploy — the
+				// root page actually lives at "<base>/", not "/".
 				if (request.mode === 'navigate') {
-					const shell = await cache.match('/');
+					const shell = await cache.match(`${base}/`);
 					if (shell) return shell;
 				}
 				throw err;

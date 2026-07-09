@@ -6,6 +6,7 @@
 	import { registerServiceWorker } from '$lib/utils/storage';
 	import { REPO_URL } from '$lib/utils/repo';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 
 	let { children } = $props();
 
@@ -49,14 +50,14 @@
 <a href="#app-main" class="skip-link">Skip to content</a>
 
 <header class="app-nav" bind:this={navEl}>
-	<a class="app-nav-brand" href="/">GenOER Reader</a>
+	<a class="app-nav-brand" href="{base}/">GenOER Reader</a>
 	<nav aria-label="Main">
-		<a href="/read{navSuffix}" aria-current={pathname.startsWith('/read') ? 'page' : undefined}>Read</a>
-		<a href="/map{navSuffix}" aria-current={pathname.startsWith('/map') ? 'page' : undefined}>Concept map</a>
-		<a href="/chat{navSuffix}" aria-current={pathname.startsWith('/chat') ? 'page' : undefined}>Chat</a>
-		<a href="/pathways{navSuffix}" aria-current={pathname.startsWith('/pathways') ? 'page' : undefined}>Pathways</a>
-		<a href="/notebook{navSuffix}" aria-current={pathname.startsWith('/notebook') ? 'page' : undefined}>Notebook</a>
-		<a href="/about" aria-current={pathname === '/about' ? 'page' : undefined}>About</a>
+		<a href="{base}/read{navSuffix}" aria-current={pathname.startsWith('/read') ? 'page' : undefined}>Read</a>
+		<a href="{base}/map{navSuffix}" aria-current={pathname.startsWith('/map') ? 'page' : undefined}>Concept map</a>
+		<a href="{base}/chat{navSuffix}" aria-current={pathname.startsWith('/chat') ? 'page' : undefined}>Chat</a>
+		<a href="{base}/pathways{navSuffix}" aria-current={pathname.startsWith('/pathways') ? 'page' : undefined}>Pathways</a>
+		<a href="{base}/notebook{navSuffix}" aria-current={pathname.startsWith('/notebook') ? 'page' : undefined}>Notebook</a>
+		<a href="{base}/about" aria-current={pathname === '/about' ? 'page' : undefined}>About</a>
 	</nav>
 </header>
 
@@ -70,7 +71,7 @@
 			GenOER Reader is free software and free to use — no accounts, no analytics, nothing leaves
 			your browser except fetching book/model files.
 			<a href={REPO_URL} rel="noopener noreferrer" target="_blank">Fork it on GitHub</a>
-			&middot; <a href="/about">About &amp; the 5Rs</a>
+			&middot; <a href="{base}/about">About &amp; the 5Rs</a>
 		</p>
 	</footer>
 {/if}

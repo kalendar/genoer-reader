@@ -13,6 +13,7 @@
  * `$lib/stores/book.ts` for reactive access to "the book currently open in
  * the reader"; use this module directly only from `load` functions.
  */
+import { base } from '$app/paths';
 
 /** A figure/image referenced by a section (metadata only; images render inline via block html). */
 export interface Figure {
@@ -83,12 +84,12 @@ export const DEFAULT_BOOK_SLUG = 'entrepreneurship';
 /** Where a book's `book.json` lives, given its slug. Pass `baseUrl` (a directory URL, trailing
  * slash) for a "load your own" book hosted elsewhere (SPEC.md §8); omit it for the bundled book. */
 export function bookUrl(slug: string, baseUrl?: string): string {
-	return baseUrl ? `${baseUrl}book.json` : `/books/${slug}/book.json`;
+	return baseUrl ? `${baseUrl}book.json` : `${base}/books/${slug}/book.json`;
 }
 
 /** Base path to resolve a section block's relative `media/<file>` image src against. */
 export function mediaBase(slug: string, baseUrl?: string): string {
-	return baseUrl ? `${baseUrl}media/` : `/books/${slug}/media/`;
+	return baseUrl ? `${baseUrl}media/` : `${base}/books/${slug}/media/`;
 }
 
 export class BookValidationError extends Error {}

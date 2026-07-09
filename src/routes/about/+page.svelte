@@ -13,6 +13,7 @@
 	import { exportAllData, importAllData, type ImportSummary } from '$lib/utils/export-all';
 	import { bookUrl } from '$lib/data/book';
 	import { graphUrl } from '$lib/data/graph';
+	import { base } from '$app/paths';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -219,7 +220,7 @@
 			<li>
 				Open this app with <code>?book=</code> followed by that directory's URL — e.g.
 				<code>https://genoer-reader.example/read?book=https://example.com/my-book/</code> — or use
-				the loader on the <a href="/">landing page</a>, which also accepts a dropped
+				the loader on the <a href="{base}/">landing page</a>, which also accepts a dropped
 				<code>book.json</code> file directly (no hosting needed, processed entirely in your
 				browser).
 			</li>
@@ -234,7 +235,7 @@
 				<dd>
 					Every highlight, note, chat transcript, practice session, reading position, and setting
 					you make here is local to your browser and exportable as one JSON file any time — see
-					<a href="/notebook">the notebook</a> or the button below.
+					<a href="{base}/notebook">the notebook</a> or the button below.
 				</dd>
 			</div>
 			<div class="about-5r-item">

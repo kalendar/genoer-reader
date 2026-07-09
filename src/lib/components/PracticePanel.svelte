@@ -20,6 +20,7 @@
 	import { addSession, recordAttempt, sectionSessions, clearPracticeHistory } from '$lib/stores/practice';
 	import { engineState } from '$lib/stores/engine-state.svelte';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 	import ModelSettingsPanel from './ModelSettings.svelte';
 
 	let bookSuffix = $derived(bookQuerySuffix());
@@ -242,7 +243,7 @@
 					<div class="question-head">
 						<span class="question-index">Q{i + 1}</span>
 						<span class="question-type">{q.type === 'mc' ? 'Multiple choice' : 'Short answer'}</span>
-						<a class="question-source" href="/read/{sectionId}{bookSuffix}#{q.anchor}">Show me where this is covered</a>
+						<a class="question-source" href="{base}/read/{sectionId}{bookSuffix}#{q.anchor}">Show me where this is covered</a>
 					</div>
 					<p class="question-prompt">{q.prompt}</p>
 

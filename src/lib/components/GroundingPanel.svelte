@@ -6,6 +6,7 @@
 	 */
 	import type { Passage } from '$lib/retrieval';
 	import { bookQuerySuffix } from '$lib/utils/book-link';
+	import { base } from '$app/paths';
 
 	let {
 		passages,
@@ -43,7 +44,7 @@
 			<ol class="grounding-list">
 				{#each passages as p (p.anchor)}
 					<li>
-						<a class="grounding-cite" href="/read/{p.sectionId}{bookSuffix}#{p.anchor}">
+						<a class="grounding-cite" href="{base}/read/{p.sectionId}{bookSuffix}#{p.anchor}">
 							[{p.index}]
 						</a>
 						<div class="grounding-body">

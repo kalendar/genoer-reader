@@ -7,6 +7,7 @@
 	 * generic "Something went wrong."
 	 */
 	import { page } from '$app/state';
+	import { base } from '$app/paths';
 </script>
 
 <svelte:head>
@@ -16,7 +17,7 @@
 <main class="error-page">
 	<h1>Couldn't load that</h1>
 	<p class="error-message">{page.error?.message ?? 'Something went wrong.'}</p>
-	<p><a href="/">&larr; Back to the landing page</a></p>
+	<p><a href="{base}/">&larr; Back to the landing page</a></p>
 </main>
 
 <style>
