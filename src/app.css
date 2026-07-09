@@ -967,3 +967,39 @@ main#main-content {
 		scroll-behavior: auto !important;
 	}
 }
+
+/* ---- Footnotes (converter-extracted; see Section.footnotes) ---- */
+.block sup.footnote-ref {
+	line-height: 0; /* don't stretch the line box */
+}
+.block sup.footnote-ref a {
+	text-decoration: none;
+	font-size: 0.75em;
+	padding: 0 0.15em;
+}
+.section-footnotes {
+	margin-top: 3rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--color-border, #ddd);
+	font-size: 0.85rem;
+	color: var(--color-text-muted);
+}
+.section-footnotes h2 {
+	font-size: 1rem;
+	margin: 0 0 0.5rem;
+}
+.section-footnotes ol {
+	padding-left: 1.4rem;
+	margin: 0;
+}
+.section-footnotes li {
+	margin-bottom: 0.5rem;
+}
+.section-footnotes li:target {
+	background: color-mix(in srgb, var(--color-accent, #8b4513) 12%, transparent);
+	border-radius: 4px;
+}
+.footnote-backref {
+	margin-left: 0.4em;
+	text-decoration: none;
+}

@@ -233,6 +233,23 @@
 		/>
 	{/each}
 
+	{#if data.section.footnotes?.length}
+		<!-- Footnotes extracted by the converter — in-text superscript markers
+		     (#fnrefN) link down here; each entry links back up. -->
+		<section class="section-footnotes" aria-label="Footnotes">
+			<h2>Footnotes</h2>
+			<ol>
+				{#each data.section.footnotes as fn, n (fn.id)}
+					<li id={fn.id}>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags — converter-produced HTML, same trust level as block html -->
+						{@html fn.html}
+						<a class="footnote-backref" href="#fnref{n + 1}" aria-label="Back to reference {n + 1}">↩</a>
+					</li>
+				{/each}
+			</ol>
+		</section>
+	{/if}
+
 	<SectionNav prev={data.prev} next={data.next} />
 </article>
 

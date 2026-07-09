@@ -49,6 +49,12 @@ export interface Section {
 	tokens: number;
 	blocks: Block[];
 	doc_class?: string;
+	/**
+	 * Footnotes extracted from the section's blocks by the converter (each
+	 * in-text occurrence is a numbered superscript linking to `#<id>` here).
+	 * Optional: books converted before footnote extraction simply lack it.
+	 */
+	footnotes?: { id: string; html: string }[];
 }
 
 /** A flat table-of-contents entry: either a chapter heading or a link to a section. */
