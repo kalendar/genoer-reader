@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+# GenOER Reader is a fully static site (SPEC.md §2 "zero backend") — this workflow is the whole
+# deploy story. Fork the repo, enable Pages (Settings → Pages → Source: GitHub Actions), push to
+# main, done. Using `github.event.repository.name` for BASE_PATH (rather than hardcoding
+# "genoer-reader") keeps that true for any fork name — see README.md "Deploying".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a new push cancels an in-flight one rather than racing it.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch reference book media
+        run: node scripts/fetch-media.mjs
+
+      - name: Build (project-Pages subpath)
+        run: BASE_PATH="/${{ github.event.repository.name }}" npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
