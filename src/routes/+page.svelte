@@ -44,9 +44,11 @@
 <div class="landing">
 	<h1>GenOER Reader</h1>
 	<p class="tagline">
-		A proof of concept for generative open educational resources — openly licensed textbooks,
-		knowledge graphs, and an on-device AI, running entirely in your browser. No backend, no
-		accounts, no cost.
+		The GenOER Reader is a proof of concept "generative OER." Each and every component of the
+		generative OER - its textbook content, knowledge graphs, AI capabilities, and source code -
+		are openly licensed, downloadable so you can 5R them, and free to use. The GenOER Reader runs
+		entirely in your local browser, meaning no data ever leaves your computer - so it is
+		completely private. Please see the <a href="{base}/about">About</a> page for more details!
 	</p>
 
 	<section class="library" aria-labelledby="library-graph-heading">
