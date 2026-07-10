@@ -50,6 +50,11 @@
 		entirely in your local browser, meaning no data ever leaves your computer - so it is
 		completely private. Please see the <a href="{base}/about">About</a> page for more details!
 	</p>
+	<p class="tagline">
+		The GenOER Reader currently includes all books from the
+		<a href="https://openstax.org/subjects" rel="noopener noreferrer" target="_blank">OpenStax</a>
+		catalog.
+	</p>
 
 	<section class="library" aria-labelledby="library-graph-heading">
 		<h2 id="library-graph-heading">Full Text + LLM + Knowledge Graph</h2>
