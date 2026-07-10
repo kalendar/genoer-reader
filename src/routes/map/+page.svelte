@@ -201,8 +201,9 @@
 
 	{#if !graph}
 		<p class="map-no-graph">
-			This book doesn't ship a knowledge graph, so the concept map isn't available for it
-			(SPEC.md §8: missing graph ⇒ map disables, the reader still works normally).
+			The knowledge graph for this book hasn't been created yet, so the concept map isn't
+			available for it (SPEC.md §8: missing graph ⇒ map disables, the reader still works
+			normally).
 		</p>
 	{:else}
 		<div class="map-toolbar">

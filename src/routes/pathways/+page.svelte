@@ -75,8 +75,9 @@
 
 	{#if !graph}
 		<p class="map-no-graph">
-			This book doesn't ship a knowledge graph, so learning pathways aren't available for it
-			(SPEC.md §8: missing graph ⇒ pathways disable, the reader still works normally).
+			The knowledge graph for this book hasn't been created yet, so learning pathways aren't
+			available for it (SPEC.md §8: missing graph ⇒ pathways disable, the reader still works
+			normally).
 		</p>
 	{:else if !target}
 		<div class="map-empty-state">
