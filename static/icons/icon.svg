@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-	<title>GenOER Reader — placeholder icon (see README: replace before a real deploy)</title>
-	<rect width="512" height="512" rx="96" fill="#7a3b1e"/>
-	<g fill="#fdfcf9">
-		<path d="M120 140c0-11 9-20 20-20h96c22 0 40 9 52 24 12-15 30-24 52-24h96c11 0 20 9 20 20v220c0 11-9 20-20 20h-96c-19 0-35 8-46 21-5 6-15 6-20 0-11-13-27-21-46-21h-96c-11 0-20-9-20-20z"/>
-		<path d="M256 164v208" stroke="#7a3b1e" stroke-width="10" fill="none"/>
+	<title>GenOER Reader</title>
+	<defs>
+		<linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
+			<stop offset="0" stop-color="#1976d2"/>
+			<stop offset="1" stop-color="#2196f3"/>
+		</linearGradient>
+	</defs>
+	<rect width="512" height="512" rx="96" fill="url(#bg)"/>
+	<!-- The favicon sparkle, scaled up in white: big star lower-left, companion upper-right -->
+	<g fill="#ffffff">
+		<path d="M232 80 Q232 280 432 280 Q232 280 232 480 Q232 280 32 280 Q232 280 232 80 Z"/>
+		<path d="M400 64 Q400 152 488 152 Q400 152 400 240 Q400 152 312 152 Q400 152 400 64 Z"/>
 	</g>
 </svg>
