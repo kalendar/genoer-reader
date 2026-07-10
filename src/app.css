@@ -880,18 +880,6 @@ main#main-content {
 	font-family: var(--font-ui);
 }
 
-/* A book loaded via ?book= that isn't the bundled default (SPEC.md §8) */
-.custom-source-banner {
-	font-family: var(--font-ui);
-	font-size: 0.85rem;
-	background: var(--color-bg-raised);
-	border: 1px solid var(--color-border);
-	border-left: 3px solid var(--color-accent);
-	border-radius: 0 0.3rem 0.3rem 0;
-	padding: 0.5rem 0.8rem;
-	margin: 0 0 var(--space-2);
-}
-
 .custom-source-warnings {
 	font-family: var(--font-ui);
 	font-size: 0.82rem;
