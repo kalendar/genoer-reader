@@ -1003,3 +1003,37 @@ main#main-content {
 	margin-left: 0.4em;
 	text-decoration: none;
 }
+
+/* ---- Homepage library ToC (corpus-driven, see $lib/utils/catalog) ---- */
+.library {
+	margin: 2rem 0 0;
+	text-align: left;
+}
+.library h2 {
+	font-size: 1.15rem;
+	margin: 0 0 0.6rem;
+	padding-bottom: 0.3rem;
+	border-bottom: 1px solid var(--color-border, #ddd);
+}
+.library-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	columns: 2 16rem;
+	column-gap: 2.5rem;
+}
+.library-list li {
+	margin: 0 0 0.45rem;
+	break-inside: avoid;
+}
+.library-list a {
+	text-decoration: none;
+}
+.library-list a:hover,
+.library-list a:focus-visible {
+	text-decoration: underline;
+}
+.library-status {
+	color: var(--color-text-muted);
+	font-size: 0.9rem;
+}
