@@ -25,6 +25,8 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@fontsource-variable/montserrat": "^5.2.8",
+		"@fontsource-variable/work-sans": "^5.2.8",
 		"@huggingface/transformers": "^3.7.1",
 		"cytoscape": "^3.34.0",
 		"cytoscape-dagre": "^4.0.0",

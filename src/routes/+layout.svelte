@@ -1,4 +1,8 @@
 <script lang="ts">
+	// Self-hosted fonts (bundled at build time) — no Google Fonts request, so the
+	// "nothing leaves your computer" promise holds for typography too.
+	import '@fontsource-variable/montserrat/index.css';
+	import '@fontsource-variable/work-sans/index.css';
 	import '../app.css';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
