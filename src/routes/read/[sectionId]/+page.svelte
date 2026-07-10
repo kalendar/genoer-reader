@@ -20,7 +20,15 @@
 
 	let { data }: PageProps = $props();
 
-	let media = $derived(mediaBase(data.slug));
+	// Resolution order: the book's own declared media_base, else a URL-loaded
+	// book's directory (`<dir>/media/`), else the bundled media path.
+	let media = $derived(
+		mediaBase(
+			data.slug,
+			data.source.kind === 'url' ? data.source.url : undefined,
+			data.book.media_base
+		)
+	);
 	let bookSuffix = $derived(bookQuerySuffix());
 	let bookAmp = $derived(bookAmpParam());
 

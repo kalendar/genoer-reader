@@ -76,6 +76,13 @@ export interface Book {
 	slug: string;
 	toc: TocEntry[];
 	sections: Section[];
+	/**
+	 * Absolute URL where this book's `media/<file>` images are served (converter `--media-base`).
+	 * Lets a book.json travel without its media — e.g. the hosted OpenStax corpus points this at
+	 * each book's own openstax/osbooks-* repo via raw.githubusercontent.com. Takes priority over
+	 * both the bundled media path and the `?book=` directory's `media/`.
+	 */
+	media_base?: string;
 }
 
 /** Slug of the bundled reference book (SPEC.md §8) and the store's default. */
@@ -87,8 +94,11 @@ export function bookUrl(slug: string, baseUrl?: string): string {
 	return baseUrl ? `${baseUrl}book.json` : `${base}/books/${slug}/book.json`;
 }
 
-/** Base path to resolve a section block's relative `media/<file>` image src against. */
-export function mediaBase(slug: string, baseUrl?: string): string {
+/** Base path to resolve a section block's relative `media/<file>` image src against.
+ * A `media_base` declared by the book itself wins; otherwise a URL-loaded book's own
+ * directory; otherwise the bundled media path. */
+export function mediaBase(slug: string, baseUrl?: string, declared?: string): string {
+	if (declared) return declared.endsWith('/') ? declared : `${declared}/`;
 	return baseUrl ? `${baseUrl}media/` : `${base}/books/${slug}/media/`;
 }
 

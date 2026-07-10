@@ -186,8 +186,9 @@
 					<input type="file" accept="application/json,.json" multiple onchange={onFileInputChange} class="sr-only-input" />
 				</label>
 				<p class="load-book-hint">
-					Processed entirely in this browser — nothing is uploaded anywhere. Media isn't included
-					in local loads, so figures will show as missing; use the URL loader for a book with images.
+					Processed entirely in this browser — nothing is uploaded anywhere. Local loads can't
+					include a media folder, so figures only show if the book.json declares a hosted
+					media_base; otherwise use the URL loader for a book with images.
 				</p>
 			</div>
 
