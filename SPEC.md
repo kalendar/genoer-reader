@@ -26,7 +26,7 @@ accounts, no metered services anywhere in the runtime path.
    The runtime only *renders* and *traverses* that data. The one exception is
    the on-device LLM, whose outputs are always grounded in retrieved book
    blocks and clearly labeled as generated.
-3. **Everything openly licensed.** Code (MIT or Apache-2.0), content (CC, per
+3. **Everything openly licensed.** Code (MIT), content (CC, per
    book), graph data (inherits the book's license as a derivative), and model
    weights (Apache-2.0/MIT). The tool itself is an argument: the 5Rs applied
    to an AI-powered learning environment.
@@ -348,7 +348,7 @@ The PoC should *demonstrate* the 5Rs, not just permit them:
 
 | Layer | License | Notes |
 |---|---|---|
-| Application code | MIT (or Apache-2.0 — decide once) | Fork-and-remix friendly |
+| Application code | MIT (decided 2026-07-11; LICENSE in repo) | Fork-and-remix friendly |
 | Content (`book.json`, media) | Per book; reference book CC BY-NC-SA 4.0 | Carried through from the collection by the converter; NC/SA surfaced in UI |
 | Graph (`graph.json`) | Same as its source book | Derivative of the content |
 | Pipelines | Per kalendar/openstax-convert and kalendar/openstax-graph repos | Linked from About page |

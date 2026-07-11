@@ -266,8 +266,8 @@
 				<dt>Redistribute</dt>
 				<dd>
 					<a href={REPO_URL} rel="noopener noreferrer" target="_blank">Fork it on GitHub</a>, change
-					what you like (MIT/Apache-2.0 code, see the repo for the exact license), and ship your own
-					version — "fork, enable Pages" is the whole deploy story.
+					what you like (the code is MIT-licensed), and ship your own version — "fork, enable
+					Pages" is the whole deploy story.
 				</dd>
 			</div>
 		</dl>
