@@ -1,7 +1,7 @@
 {
 	"name": "GenOER Reader",
 	"short_name": "GenOER",
-	"description": "AI-powered learning materials that are openly licensed and free to use. An open textbook, open knowledge graph, and open harness, and open weights LLM - all usable offline for complete privacy.",
+	"description": "AI-powered learning materials that are openly licensed and free to use. An open textbook, open knowledge graph, open harness, and open weights LLM - all usable offline for complete privacy.",
 	"start_url": ".",
 	"scope": ".",
 	"display": "standalone",
